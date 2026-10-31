@@ -856,10 +856,22 @@ function initMap() {
 }
 
 function drawPolyline() {
-    if (!map) return; if (state.polyline) { map.removeLayer(state.polyline); }
-    const points = []; Object.values(state.stops).filter(s => s.routeId === state.bus).forEach(s => points.push([s.lat, s.lng]));
+    if (!map) return; 
+    if (state.polyline) { map.removeLayer(state.polyline); }
+    
+    const points = []; 
+    
+    const d = state.fleet[state.bus];
+    if (d && d.status === 'RUNNING' && isNum(d.lat) && isNum(d.lng)) {
+        points.push([d.lat, d.lng]);
+    }
+    
+    Object.values(state.stops).filter(s => s.routeId === state.bus).forEach(s => points.push([s.lat, s.lng]));
     points.push([C.lat, C.lng]);
-    if (points.length > 1 && state.bus !== 'ALL') { state.polyline = L.polyline(points, {color: '#1d4ed8', weight: 4}).addTo(map); }
+    
+    if (points.length > 1 && state.bus !== 'ALL') { 
+        state.polyline = L.polyline(points, {color: '#1d4ed8', weight: 4}).addTo(map); 
+    }
 }
 
 function setFollow(on) { state.follow = on; const b = $('followBtn'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Following bus' : 'Follow bus'; }
@@ -954,6 +966,8 @@ function renderLive() {
     }
 
     if (state.lastKey !== s.key) { if (state.lastKey !== undefined) announce(state.bus + ': ' + STATE_LABEL[s.key]); state.lastKey = s.key; }
+    
+    drawPolyline();
 }
 
 function checkApproach() {
