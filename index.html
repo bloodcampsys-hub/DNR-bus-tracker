@@ -14,16 +14,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-<!-- Google Maps API (Replace YOUR_API_KEY with actual key) -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY" async defer></script>
-<!-- Leaflet GoogleMutant plugin for Google Maps Integration -->
-<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.5/dist/Leaflet.GoogleMutant.js"></script>
+<!-- Native Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&libraries=maps,marker" async defer></script>
 
 <style>
 :root {
@@ -155,7 +152,7 @@ body[data-mode="all"] .for-bus { display: none; }
 
 /* Map */
 .map-tools { display: flex; flex-wrap: wrap; gap: 8px; }
-#map { position: relative; z-index: 0; width: 100%; height: 56vh; min-height: 340px; max-height: 560px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #dfe7f3; }
+#map { position: relative; z-index: 0; width: 100%; height: 56vh; min-height: 340px; max-height: 560px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #dfe7f3; overflow: hidden; }
 .pin-wrap { background: none; border: none; }
 .pin { position: relative; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(11, 31, 68, .35); }
 .pin-live { background: var(--live); }
@@ -166,9 +163,12 @@ body[data-mode="all"] .for-bus { display: none; }
 .pin-live::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--live); animation: ring 2s ease-out infinite; }
 @keyframes ring { from { transform: scale(.8); opacity: .9; } to { transform: scale(1.5); opacity: 0; } }
 @keyframes pulseSos { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 40, 30, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(200, 40, 30, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 40, 30, 0); } }
-.pin-label { font-weight: 700; font-size: 12px; border-radius: 6px; padding: 2px 7px; }
-.popup strong { display: block; }
-.popup span { color: var(--muted); font-size: 13px; }
+
+/* Fix InfoWindow styles for GMaps */
+.gm-style-iw { border-radius: 12px !important; padding: 12px !important; }
+.gm-style-iw-d { overflow: hidden !important; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; }
+.gm-style-iw-d strong { font-size: 15px; color: var(--text); }
+.gm-style-iw-d span { color: var(--muted); }
 
 /* Driver */
 .notice { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--blue-soft); color: var(--ink); font-size: 14px; }
@@ -331,7 +331,7 @@ textarea.input { resize: vertical; min-height: 92px; }
                 <h2 id="mapTitle">Live map</h2>
                 <div class="map-tools">
                     <button type="button" class="btn btn-quiet btn-small for-bus" id="followBtn" aria-pressed="true" style="display:none">Following bus</button>
-                    <button type="button" class="btn btn-quiet btn-small" id="fitBtn">Show whole route</button>
+                    <button type="button" class="btn btn-quiet btn-small" id="fitBtn">Fit map bounds</button>
                     <button type="button" class="btn btn-quiet btn-small" id="locateBtn">My location</button>
                 </div>
             </div>
@@ -527,8 +527,6 @@ textarea.input { resize: vertical; min-height: 92px; }
 
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="sr-only" id="srStatus" aria-live="polite"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 (() => {
@@ -830,109 +828,264 @@ function showApp() {
     $('roleSelectionScreen').hidden = true; $('appInterface').hidden = false;
     document.body.dataset.role = state.role; document.body.dataset.mode = state.bus === 'ALL' ? 'all' : 'bus';
     $('roleChip').textContent = state.role; $('followBtn').style.display = state.bus === 'ALL' ? 'none' : ''; $('fitBtn').textContent = state.bus === 'ALL' ? 'Show all buses' : 'Show whole route';
-    initMap(); attachFleet(); attachAnnouncements(); handleEmergency(true); renderLive(); updateDriverUI(); drawPolyline();
-    window.scrollTo(0, 0); if (map) requestAnimationFrame(() => map.invalidateSize());
+    initMap(); attachFleet(); attachAnnouncements(); handleEmergency(true); renderLive(); updateDriverUI();
+    window.scrollTo(0, 0); 
 }
 
-/* Map Initialization (Google Maps + OSM) */
-let map = null, youMarker = null; const markers = new Map(), sosMarkers = new Map();
-function popupEl(title, sub) { return h('div', { class: 'popup' }, h('strong', {}, title), h('span', {}, sub)); }
+/* =====================================================================
+   Native Google Maps Implementation (No Leaflet)
+   ===================================================================== */
+let map = null, youMarker = null; 
+const markers = new Map(), sosMarkers = new Map();
 
-function initMap() {
-    if (map) return; if (typeof L === 'undefined') { $('map').replaceChildren(h('p', { class: 'empty', style: 'padding:16px' }, "The map didn't load.")); return; }
-    map = L.map('map').setView([C.lat, C.lng], 12);
-    const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
-    let googleStreets, googleSat;
-    try { if (L.gridLayer.googleMutant) { googleStreets = L.gridLayer.googleMutant({ type: 'roadmap' }); googleSat = L.gridLayer.googleMutant({ type: 'satellite' }); } } catch(e) {}
-    
-    const baseMaps = { "OpenStreetMap": osmLayer };
-    if (googleStreets) baseMaps["Google Streets"] = googleStreets;
-    if (googleSat) baseMaps["Google Satellite"] = googleSat;
-    if (googleStreets) googleStreets.addTo(map); else osmLayer.addTo(map);
-    L.control.layers(baseMaps).addTo(map);
+async function initMap() {
+    if (map) return;
+    try {
+        const { Map } = await google.maps.importLibrary("maps");
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+        
+        map = new Map(document.getElementById("map"), {
+            center: { lat: C.lat, lng: C.lng },
+            zoom: 12,
+            mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement HTML styling
+            disableDefaultUI: false,
+            mapTypeControl: true
+        });
 
-    L.marker([C.lat, C.lng], { title: C.name, icon: L.divIcon({ className: 'pin-wrap', html: '<div class="pin pin-college">🎓</div>', iconSize: [40, 40], iconAnchor: [20, 20] }) }).addTo(map).bindPopup(popupEl(C.name, 'Destination'));
-    map.on('dragstart', () => setFollow(false));
+        // Destination College Marker
+        const div = document.createElement('div');
+        div.className = 'pin-wrap';
+        div.innerHTML = '<div class="pin pin-college">🎓</div>';
+        
+        const collegeMarker = new AdvancedMarkerElement({
+            map: map,
+            position: { lat: C.lat, lng: C.lng },
+            title: C.name,
+            content: div
+        });
+        
+        const infoWindow = new google.maps.InfoWindow({ content: `<div><strong>${C.name}</strong><br><span>Destination</span></div>` });
+        collegeMarker.addListener('click', () => infoWindow.open({ anchor: collegeMarker, map }));
+        
+        map.addListener('dragstart', () => setFollow(false));
+    } catch(err) {
+        $('map').replaceChildren(h('p', { class: 'empty', style: 'padding:16px' }, "The map didn't load. Check your internet connection."));
+    }
 }
 
-function drawPolyline() {
-    if (!map) return; 
-    if (state.polyline) { map.removeLayer(state.polyline); }
+async function drawPolyline() {
+    if (!map) return;
+    if (state.polyline) { state.polyline.setMap(null); state.polyline = null; }
     
     const points = []; 
     
+    // Add live bus location
     const d = state.fleet[state.bus];
     if (d && d.status === 'RUNNING' && isNum(d.lat) && isNum(d.lng)) {
-        points.push([d.lat, d.lng]);
+        points.push([d.lng, d.lat]); // OSRM uses [longitude, latitude]
     }
     
-    Object.values(state.stops).filter(s => s.routeId === state.bus).forEach(s => points.push([s.lat, s.lng]));
-    points.push([C.lat, C.lng]);
+    // Add all saved stops for this route
+    Object.values(state.stops).filter(s => s.routeId === state.bus).forEach(s => points.push([s.lng, s.lat]));
     
-    if (points.length > 1 && state.bus !== 'ALL') { 
-        state.polyline = L.polyline(points, {color: '#1d4ed8', weight: 4}).addTo(map); 
+    // End at college
+    points.push([C.lng, C.lat]);
+    
+    if (points.length > 1 && state.bus !== 'ALL') {
+        const coordString = points.map(p => p[0] + ',' + p[1]).join(';');
+        
+        try {
+            // Fetch road-snapped route from OSRM
+            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson`);
+            const data = await res.json();
+            
+            if (data.routes && data.routes[0]) {
+                const routeCoords = data.routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
+                state.polyline = new google.maps.Polyline({
+                    path: routeCoords,
+                    strokeColor: '#1d4ed8',
+                    strokeWeight: 4,
+                    strokeOpacity: 0.8,
+                    map: map
+                });
+            }
+        } catch (err) {
+            // Fallback straight line if routing server fails
+            const fallbackCoords = points.map(p => ({ lat: p[1], lng: p[0] }));
+            const lineSymbol = { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4 };
+            state.polyline = new google.maps.Polyline({
+                path: fallbackCoords,
+                strokeOpacity: 0,
+                icons: [{ icon: lineSymbol, offset: '0', repeat: '20px' }],
+                strokeColor: '#1d4ed8',
+                map: map
+            });
+        }
     }
 }
 
 function setFollow(on) { state.follow = on; const b = $('followBtn'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Following bus' : 'Follow bus'; }
-function busIcon(cls) { return L.divIcon({ className: 'pin-wrap', html: '<div class="pin pin-' + cls + '">🚌</div>', iconSize: [40, 40], iconAnchor: [20, 20] }); }
-function animateTo(m, to) { cancelAnimationFrame(m.raf); const from = m.marker.getLatLng(), start = performance.now(), dur = 1500; const dLat = to[0] - from.lat, dLng = to[1] - from.lng; const step = (now) => { const t = Math.min(1, (now - start) / dur); m.marker.setLatLng([from.lat + dLat * t, from.lng + dLng * t]); if (t < 1) m.raf = requestAnimationFrame(step); }; m.raf = requestAnimationFrame(step); }
 
-function syncMarkers(dataChanged) {
-    if (!map) return; const seen = new Set();
-    Object.keys(state.fleet).forEach((key) => {
-        const d = state.fleet[key], s = busState(d); if (s.key === 'offline') return; seen.add(key);
-        const cls = s.key === 'live' ? 'live' : s.key === 'weak' ? 'weak' : 'lost'; const to = [d.lat, d.lng];
+function animateMarker(m, to) {
+    cancelAnimationFrame(m.raf);
+    const from = m.marker.position;
+    const start = performance.now(), dur = 1500;
+    const dLat = to.lat - from.lat, dLng = to.lng - from.lng;
+    
+    const step = (now) => {
+        const t = Math.min(1, (now - start) / dur);
+        m.marker.position = { lat: from.lat + dLat * t, lng: from.lng + dLng * t };
+        if (t < 1) m.raf = requestAnimationFrame(step);
+    };
+    m.raf = requestAnimationFrame(step);
+}
+
+async function syncMarkers(dataChanged) {
+    if (!map) return;
+    const seen = new Set();
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+    const { InfoWindow } = await google.maps.importLibrary("maps");
+
+    for (const key of Object.keys(state.fleet)) {
+        const d = state.fleet[key], s = busState(d);
+        if (s.key === 'offline') continue;
+        seen.add(key);
+        
+        const cls = s.key === 'live' ? 'live' : s.key === 'weak' ? 'weak' : 'lost';
+        const pos = { lat: d.lat, lng: d.lng };
+        
         let m = markers.get(key);
         if (!m) {
-            const marker = L.marker(to, { icon: busIcon(cls), title: key }).addTo(map).bindPopup('');
-            if (state.bus === 'ALL') marker.bindTooltip(key, { permanent: true, direction: 'bottom', offset: [0, 18], className: 'pin-label' });
-            m = { marker, cls, pos: to, raf: 0 }; markers.set(key, m);
+            const div = document.createElement('div');
+            div.className = 'pin-wrap';
+            div.innerHTML = `<div class="pin pin-${cls}">🚌</div>`;
+            
+            const marker = new AdvancedMarkerElement({ map: map, position: pos, title: key, content: div });
+            const infoWindow = new InfoWindow();
+            marker.addListener('click', () => infoWindow.open({ anchor: marker, map }));
+            
+            m = { marker, cls, pos, infoWindow, raf: 0 };
+            markers.set(key, m);
         } else {
-            if (m.cls !== cls) { m.marker.setIcon(busIcon(cls)); m.cls = cls; }
-            if (dataChanged && (m.pos[0] !== to[0] || m.pos[1] !== to[1])) { animateTo(m, to); m.pos = to; }
+            if (m.cls !== cls) {
+                m.marker.content.innerHTML = `<div class="pin pin-${cls}">🚌</div>`;
+                m.cls = cls;
+            }
+            if (dataChanged && (m.pos.lat !== pos.lat || m.pos.lng !== pos.lng)) {
+                animateMarker(m, pos);
+                m.pos = pos;
+            }
         }
-        if (dataChanged || m.marker.isPopupOpen()) {
+        
+        if (dataChanged || m.infoWindow.getMap()) {
             const route = state.routes[key] ? prettyRoute(state.routes[key].name) : '';
             const when = isNum(d.updatedAt) ? 'Updated ' + ago(nowMs() - d.updatedAt) : 'Live location';
-            m.marker.getPopup().setContent(popupEl(key + (route ? ': ' + route : ''), STATE_LABEL[s.key] + '. ' + when));
+            m.infoWindow.setContent(`<div><strong>${key}${route ? ': ' + route : ''}</strong><br><span>${STATE_LABEL[s.key]}. ${when}</span></div>`);
         }
-    });
-    markers.forEach((m, key) => { if (!seen.has(key)) { cancelAnimationFrame(m.raf); map.removeLayer(m.marker); markers.delete(key); } });
+    }
+    
+    for (const [key, m] of markers.entries()) {
+        if (!seen.has(key)) {
+            m.marker.map = null;
+            cancelAnimationFrame(m.raf);
+            markers.delete(key);
+        }
+    }
+    
     if (dataChanged) moveCamera();
 }
 
-function renderSosMapMarkers() {
-    if (!map) return; const seen = new Set();
-    state.activeSosList.forEach(a => {
-        if (state.role === 'Driver' && a.route !== state.bus) return;
-        seen.add(a.id); let m = sosMarkers.get(a.id);
-        if (!m) { m = L.marker([a.lat, a.lng], { icon: L.divIcon({ className: 'pin-wrap', html: '<div class="pin pin-sos">🚨</div>', iconSize: [40,40], iconAnchor: [20,20] }) }).addTo(map); sosMarkers.set(a.id, m); }
-        m.bindPopup(popupEl(`SOS Alert: ${a.studentId}`, `Route: ${a.route}`));
-    });
-    sosMarkers.forEach((m, k) => { if (!seen.has(k)) { map.removeLayer(m); sosMarkers.delete(k); } });
+async function renderSosMapMarkers() {
+    if (!map) return;
+    const seen = new Set();
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+    const { InfoWindow } = await google.maps.importLibrary("maps");
+
+    for (const a of state.activeSosList) {
+        if (state.role === 'Driver' && a.route !== state.bus) continue;
+        seen.add(a.id);
+        let m = sosMarkers.get(a.id);
+        if (!m) {
+            const div = document.createElement('div');
+            div.className = 'pin-wrap';
+            div.innerHTML = `<div class="pin pin-sos">🚨</div>`;
+            
+            const marker = new AdvancedMarkerElement({ map: map, position: { lat: a.lat, lng: a.lng }, content: div });
+            const infoWindow = new InfoWindow({ content: `<div><strong>SOS Alert: ${a.studentId}</strong><br><span>Route: ${a.route}</span></div>` });
+            marker.addListener('click', () => infoWindow.open({ anchor: marker, map }));
+            
+            m = { marker, infoWindow };
+            sosMarkers.set(a.id, m);
+        }
+    }
+    
+    for (const [k, m] of sosMarkers.entries()) {
+        if (!seen.has(k)) { m.marker.map = null; sosMarkers.delete(k); }
+    }
 }
 
-function pointsInView() { const pts = [[C.lat, C.lng]]; markers.forEach((m) => pts.push(m.pos)); return pts; }
+function pointsInView() {
+    const pts = [{ lat: C.lat, lng: C.lng }];
+    markers.forEach((m) => pts.push(m.pos));
+    return pts;
+}
+
 function moveCamera() {
-    if (!map) return; if (!markers.size) { state.firstFix = false; return; }
-    if (!state.firstFix) { state.firstFix = true; map.fitBounds(pointsInView(), { padding: [60, 60], maxZoom: 16 }); return; }
-    if (state.bus !== 'ALL' && state.follow) { const m = markers.get(state.bus); if (m) map.panTo(m.pos, { animate: true, duration: 1.2 }); }
+    if (!map) return;
+    if (!markers.size) { state.firstFix = false; return; }
+    if (!state.firstFix) {
+        state.firstFix = true;
+        const bounds = new google.maps.LatLngBounds();
+        pointsInView().forEach(p => bounds.extend(p));
+        map.fitBounds(bounds);
+        return;
+    }
+    if (state.bus !== 'ALL' && state.follow) {
+        const m = markers.get(state.bus);
+        if (m) map.panTo(m.pos);
+    }
 }
 
 $('followBtn').addEventListener('click', () => { setFollow(!state.follow); if (state.follow) { const m = markers.get(state.bus); if (m && map) map.panTo(m.pos); } });
-$('fitBtn').addEventListener('click', () => { if (!map) return; map.fitBounds(pointsInView(), { padding: [60, 60], maxZoom: 16 }); if (state.bus !== 'ALL') setFollow(false); });
-$('locateBtn').addEventListener('click', () => {
-    if (!map) return; if (!navigator.geolocation) { toast("This device can't share its location with the page.", 'warn'); return; }
+
+$('fitBtn').addEventListener('click', () => { 
+    if (!map) return; 
+    const bounds = new google.maps.LatLngBounds();
+    pointsInView().forEach(p => bounds.extend(p));
+    map.fitBounds(bounds);
+    if (state.bus !== 'ALL') setFollow(false); 
+});
+
+$('locateBtn').addEventListener('click', async () => {
+    if (!map) return; 
+    if (!navigator.geolocation) { toast("This device can't share its location with the page.", 'warn'); return; }
+    
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+    const { InfoWindow } = await google.maps.importLibrary("maps");
+    
     navigator.geolocation.getCurrentPosition((p) => {
-        const ll = [p.coords.latitude, p.coords.longitude];
-        if (youMarker) youMarker.setLatLng(ll); else youMarker = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#1d4ed8', fillOpacity: 1 }).addTo(map).bindTooltip('You are here');
-        if (state.bus !== 'ALL') setFollow(false); const pts = pointsInView(); pts.push(ll); map.fitBounds(pts, { padding: [60, 60], maxZoom: 16 });
+        const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
+        if (youMarker) {
+            youMarker.marker.position = pos;
+        } else {
+            const div = document.createElement('div');
+            div.style.cssText = 'width:16px;height:16px;background:#1d4ed8;border:3px solid #fff;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.4);';
+            const marker = new AdvancedMarkerElement({ map: map, position: pos, content: div });
+            const infoWindow = new InfoWindow({ content: '<div><strong>You are here</strong></div>' });
+            marker.addListener('click', () => infoWindow.open({ anchor: marker, map }));
+            youMarker = { marker, infoWindow };
+        }
+        if (state.bus !== 'ALL') setFollow(false);
+        
+        const bounds = new google.maps.LatLngBounds();
+        pointsInView().forEach(pt => bounds.extend(pt));
+        bounds.extend(pos);
+        map.fitBounds(bounds);
     }, () => toast("Couldn't get your location.", 'warn'), { enableHighAccuracy: true, timeout: 10000 });
 });
 
 /* Fleet & Live Tracking */
-function resetBusView() { markers.forEach((m) => { cancelAnimationFrame(m.raf); if (map) map.removeLayer(m.marker); }); markers.clear(); state.fleet = {}; state.firstFix = false; state.lastKey = undefined; setFollow(true); }
+function resetBusView() { markers.forEach((m) => { cancelAnimationFrame(m.raf); if (map) m.marker.map = null; }); markers.clear(); state.fleet = {}; state.firstFix = false; state.lastKey = undefined; setFollow(true); }
 function detachFleet() { if (fleetRef) { fleetRef.off(); fleetRef = null; } state.alertKey = ''; stopSiren(); audio.muted = false; $('alertBanner').hidden = true; }
 
 function attachFleet() {
