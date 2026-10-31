@@ -3,6 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DNR College Bus Tracker</title>
+<meta name="description" content="Live location, arrival time and alerts for every DNR College of Engineering & Technology bus.">
+<meta name="theme-color" content="#0b1f44">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b1f44'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle'%3E%F0%9F%9A%8C%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<!-- Google Maps API (Replace YOUR_API_KEY with actual key) -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY" async defer></script>
+<!-- Leaflet GoogleMutant plugin for Google Maps Integration -->
+<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.5/dist/Leaflet.GoogleMutant.js"></script>
+
+<style>
+:root {
+    --ink: #0b1f44; --blue: #1d4ed8; --blue-dark: #1e40af; --blue-soft: #e6eefc;
+    --amber: #ffb81c; --page: #eef3fb; --surface: #ffffff; --line: #d6deeb;
+    --text: #14213d; --muted: #52607a; --live: #0a7a4b; --live-soft: #e1f5ec;
+    --warn: #7a4b00; --warn-soft: #fff1cf; --alert: #c8281e; --alert-soft: #fde8e6;
+    --radius: 14px; --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 1.5; background: var(--page); color: var(--text); min-height: 100vh; }
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.muted { color: var(--muted); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 1px solid transparent; border-radius: var(--radius-sm); font-weight: 600; font-size: 15px; cursor: pointer; transition: all .15s; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-go { background: var(--live); color: #fff; }
+.btn-danger { background: var(--alert); color: #fff; }
+.btn-danger:hover { background: #a82019; }
+.btn-quiet { background: var(--surface); border-color: var(--line); color: var(--text); }
+.btn-quiet:hover { background: #f3f6fc; }
+.btn-ghost-danger { background: var(--surface); border-color: #f0b9b4; color: #a82019; }
+.btn-small { min-height: 38px; padding: 6px 14px; font-size: 14px; }
+.btn-wide { width: 100%; }
+.btn-lg { min-height: 54px; font-size: 17px; }
+
+/* Entry screen & Boards */
+#roleSelectionScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.role-wrap { width: 100%; max-width: 640px; }
+.board { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 22px; align-items: center; background-color: var(--ink); background-image: radial-gradient(rgba(255, 184, 28, .09) 1px, transparent 1.4px); background-size: 6px 6px; color: var(--amber); padding: 22px 26px; font-family: 'DotGothic16', monospace; }
+.board-num { min-width: 1.7em; padding: .1em .26em; border-radius: 8px; text-align: center; background: var(--amber); color: var(--ink); font-size: clamp(38px, 8vw, 62px); line-height: 1.05; }
+.board-route { font-size: clamp(20px, 3.8vw, 30px); }
+.board-line { margin-top: 6px; font-size: 15px; color: rgba(255, 184, 28, .82); }
+.board-eta-val { font-size: clamp(28px, 5vw, 44px); }
+.board-eta-sub { margin-top: 6px; font-size: 13px; color: rgba(255, 184, 28, .82); text-align: right; }
+.board-title { border-radius: var(--radius); margin-bottom: 20px; grid-template-columns: auto 1fr; }
+.board-title h1 { font-size: clamp(28px, 6.4vw, 46px); }
+.role-list { display: grid; gap: 12px; margin-top: 20px; }
+.role-row { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; }
+.role-row:hover { border-color: var(--blue); background: #f7faff; }
+.role-icon { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; font-size: 26px; background: var(--blue-soft); }
+
+/* App shell */
+.top { position: sticky; top: 0; z-index: 500; }
+header { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: space-between; align-items: center; background: var(--surface); border-bottom: 1px solid var(--line); padding: 10px 16px; }
+.logo { font-weight: 800; font-size: 17px; color: var(--ink); }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.role-chip { background: var(--blue-soft); color: var(--blue-dark); font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+
+.container { width: 92%; max-width: 1100px; margin: 22px auto 40px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; }
+.card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.card-sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+
+.for-driver, .for-mgmt, .for-all, .for-student { display: none; }
+body[data-role="Driver"] .for-driver { display: block; }
+body[data-role="Management"] .for-mgmt { display: block; }
+body[data-role="Student"] .for-student { display: block; }
+body[data-mode="all"] .for-all { display: block; }
+body[data-mode="all"] .for-bus { display: none; }
+
+/* Hero & Facts */
+.hero { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); margin: 0; }
+.facts > div { background: var(--surface); padding: 14px 18px; }
+.facts dt { font-size: 13px; color: var(--muted); }
+.facts dd { margin: 0; font-size: 18px; font-weight: 700; }
+.badge { display: inline-flex; align-items: center; gap: 7px; padding: 3px 11px; border-radius: 999px; font-size: 14px; font-weight: 700; background: #eceff5; color: #475569; }
+
+/* Map */
+#map { position: relative; z-index: 0; width: 100%; height: 56vh; min-height: 340px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #dfe7f3; }
+.pin-wrap { background: none; border: none; }
+.pin { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+.pin-live { background: var(--live); }
+.pin-weak { background: #b7791f; }
+.pin-lost { background: #8995ad; }
+.pin-college { background: var(--ink); }
+.pin-sos { background: var(--alert); animation: pulseSos 1s infinite; }
+@keyframes pulseSos { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+/* Forms */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.input { width: 100%; padding: 11px 12px; font: inherit; font-size: 16px; border: 1px solid #b8c4d8; border-radius: var(--radius-sm); }
+textarea.input { resize: vertical; min-height: 92px; }
+
+/* Lists (Fleet, Stops, Alerts) */
+.list-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
+.list-row:first-child { border-top: none; padding-top: 0; }
+.list-badge { min-width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; background: var(--blue-soft); color: var(--blue-dark); }
+
+/* Modals */
+.modal { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(11, 31, 68, .55); }
+.modal.open { display: flex; }
+.modal-box { width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 18px; padding: 24px; box-shadow: 0 24px 60px rgba(11,31,68,.35); }
+.modal-actions { display: grid; gap: 10px; margin-top: 18px; }
+
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 11000; background: var(--ink); color: #fff; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 15px; }
+.toast.warn { background: var(--warn); }
+.toast.error { background: var(--alert); }
+</style>
+</head>
+
+<body data-role="" data-mode="bus">
+
+<main id="roleSelectionScreen">
+    <div class="role-wrap">
+        <div class="board board-title">
+            <div class="board-num">🚌</div>
+            <h1>DNR College Bus Tracker</h1>
+        </div>
+        <p class="lede">See where your bus is, when it will reach college, and what is happening on your route.</p>
+        <div class="role-list">
+            <button type="button" class="role-row" data-role="Student">
+                <span class="role-icon">🎓</span>
+                <span class="role-text"><strong>Student portal</strong><span>Track your bus live, get approach alerts and raise SOS.</span></span>
+            </button>
+            <button type="button" class="role-row" data-role="Driver">
+                <span class="role-icon">🚌</span>
+                <span class="role-text"><strong>Driver portal</strong><span>Share location and monitor emergencies.</span></span>
+            </button>
+            <button type="button" class="role-row" data-role="Management">
+                <span class="role-icon">⚙️</span>
+                <span class="role-text"><strong>Management portal</strong><span>Manage routes, stops, and resolve alerts. Password required.</span></span>
+            </button>
+        </div>
+    </div>
+</main>
+
+<div id="appInterface" hidden>
+    <div class="top">
+        <header>
+            <div class="logo">🚌 DNR Bus Tracker</div>
+            <div class="header-actions">
+                <span class="role-chip" id="roleChip">Student</span>
+                <button type="button" class="btn btn-danger btn-small for-student" id="openSosBtn">SOS Emergency</button>
+                <button type="button" class="btn btn-quiet btn-small" id="changeRouteBtn">Change route/stop</button>
+                <button type="button" class="btn btn-ghost-danger btn-small" id="exitBtn">Exit</button>
+            </div>
+        </header>
+    </div>
+
+    <div class="container">
+        <!-- Dashboard Hero -->
+        <section class="hero for-bus">
+            <div class="board" id="hero" data-state="offline">
+                <div class="board-num" id="boardNum">01</div>
+                <div>
+                    <div class="board-route" id="boardRoute">Route</div>
+                    <div class="board-line" id="boardLine">Not running right now</div>
+                </div>
+                <div class="board-eta">
+                    <div class="board-eta-val" id="busEta">--</div>
+                    <div class="board-eta-sub" id="busEtaSub">Arrival time shows when the bus is running</div>
+                </div>
+            </div>
+            <dl class="facts">
+                <div><dt>Status</dt><dd id="factStatus"><span class="badge">Offline</span></dd></div>
+                <div><dt>Speed</dt><dd id="factSpeed">0 km/h</dd></div>
+                <div class="for-student"><dt>My Boarding Stop</dt><dd id="factStop">Not selected</dd></div>
+                <div class="for-student"><dt>Dist. to My Stop</dt><dd id="factStopDist">--</dd></div>
+            </dl>
+        </section>
+
+        <!-- Live Map -->
+        <section class="card">
+            <div class="card-head">
+                <h2 id="mapTitle">Live map</h2>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-quiet btn-small" id="fitBtn">Fit map</button>
+                    <button type="button" class="btn btn-quiet btn-small" id="locateBtn">My location</button>
+                </div>
+            </div>
+            <div id="map"></div>
+        </section>
+
+        <!-- Emergency Management (Management & Driver) -->
+        <section class="card for-mgmt for-driver" style="border-color: var(--alert);">
+            <h2>Active Student SOS Alerts</h2>
+            <div id="activeSosList"><p class="muted">No active SOS alerts.</p></div>
+        </section>
+
+        <!-- Driver Controls -->
+        <section class="card for-driver">
+            <h2>Share your location</h2>
+            <button type="button" class="btn btn-go btn-lg btn-wide" id="trackBtn">Start sharing location</button>
+            <p class="muted" style="margin-top:10px;" id="drvMsg"></p>
+        </section>
+
+        <!-- Management Tools -->
+        <div class="grid-2 for-all for-mgmt">
+            <section class="card">
+                <h2>Manage Stops</h2>
+                <form id="addStopForm">
+                    <div class="field">
+                        <label>Route ID</label>
+                        <input type="text" id="stopRouteId" class="input" placeholder="BUS-01" required>
+                    </div>
+                    <div class="field">
+                        <label>Stop Name</label>
+                        <input type="text" id="stopName" class="input" placeholder="Main Canal Junction" required>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="field" style="flex:1"><label>Lat</label><input type="number" step="any" id="stopLat" class="input" required></div>
+                        <div class="field" style="flex:1"><label>Lng</label><input type="number" step="any" id="stopLng" class="input" required></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-wide">Add Stop</button>
+                </form>
+                <div id="mgmtStopList" style="margin-top: 15px;"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Route & Stop Selection Modal -->
+<div class="modal" id="busSelectModal">
+    <div class="modal-box">
+        <h2>Choose a route & stop</h2>
+        <div class="field">
+            <label>Select Route</label>
+            <select id="routeSelectDropdown" class="input"></select>
+        </div>
+        <div class="field for-student" id="stopSelectWrapper">
+            <label>Select Boarding Stop</label>
+            <select id="stopSelectDropdown" class="input">
+                <option value="">None / Direct to College</option>
+            </select>
+            <p class="muted" style="font-size:12px; margin-top:4px;">We'll notify you when the bus is 2km away.</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-primary" id="confirmRouteBtn">Open tracker</button>
+            <button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- SOS Modal -->
+<div class="modal" id="sosModal">
+    <form class="modal-box" id="sosForm">
+        <h2>🚨 Send SOS Emergency Alert</h2>
+        <p class="muted" style="margin-bottom:15px;">This will capture your live GPS location and alert management and drivers immediately. Use only in actual emergencies.</p>
+        <div class="field">
+            <label>Student ID</label>
+            <!-- Using your provided ID as a helpful placeholder to make testing easier -->
+            <input type="text" id="sosStudentId" class="input" placeholder="24354-CM-031" required>
+        </div>
+        <div class="modal-actions">
+            <button type="submit" class="btn btn-danger">Send SOS Alert</button>
+            <button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+        </div>
+    </form>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal" id="authModal">
+    <form class="modal-box" id="authForm">
+        <h2 id="authTitle">Password required</h2>
+        <input type="password" id="authInput" class="input" required style="margin: 15px 0;">
+        <p class="form-error" id="authError" style="color:var(--alert); font-size:14px;"></p>
+        <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">Continue</button>
+            <button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+        </div>
+    </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(() => {
+'use strict';
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCsiL4nML9FD4skd_v0850zsdQTCeqYg8M",
+    authDomain: "college-bus-tracking-sys-a4bf7.firebaseapp.com",
+    databaseURL: "https://college-bus-tracking-sys-a4bf7-default-rtdb.firebaseio.com",
+    projectId: "college-bus-tracking-sys-a4bf7",
+    storageBucket: "college-bus-tracking-sys-a4bf7.firebasestorage.app"
+};
+
+const SETTINGS = {
+    college: { name: 'DNR College', lat: 16.5358, lng: 81.5186 },
+    managementPasswordHash: '5a23444828db654a0eaef5f81aabe79432871f43f73ea888279b3ee212f98a7b', // Hash for "Manage"
+    approachRadiusKm: 2.0,
+    defaultRoutes: { 'BUS-01': { name: 'Bhyravapatnam -> DNR College' } }
+};
+
+const $ = id => document.getElementById(id);
+const localStore = { get: k => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), del: k => localStorage.removeItem(k) };
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ServerValue = firebase.database.ServerValue;
+
+const state = {
+    role: '', bus: 'BUS-01', stopId: '', routes: { ...SETTINGS.defaultRoutes }, stops: {}, fleet: {},
+    notifiedApproaching: false, activeSosList: [], polyline: null
+};
+
+let map = null, youMarker = null, markers = new Map(), sosMarkers = new Map();
+
+/* Toast */
+function toast(msg, type = '') {
+    const t = $('toast'); t.textContent = msg; t.className = 'toast ' + type; t.hidden = false;
+    setTimeout(() => t.hidden = true, 4000);
+}
+
+/* Auth */
+async function sha256Hex(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+let authResolve = null;
+function askSecret() {
+    return new Promise(r => { authResolve = r; $('authInput').value = ''; $('authError').textContent = ''; openModal($('authModal')); });
+}
+$('authForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (await sha256Hex($('authInput').value) === SETTINGS.managementPasswordHash) {
+        closeModal($('authModal')); authResolve(true);
+    } else { $('authError').textContent = "Incorrect password."; }
+});
+
+/* Modals */
+function openModal(el) { el.classList.add('open'); }
+function closeModal(el) { el.classList.remove('open'); }
+document.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', e => closeModal(e.target.closest('.modal'))));
+
+/* Distance */
+function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371, rad = Math.PI / 180;
+    const a = Math.sin((lat2 - lat1)*rad/2)**2 + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin((lon2 - lon1)*rad/2)**2;
+    return 2 * R * Math.atan2(Math.sqrt<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <!-- Google Search Console Verification -->
 <meta name="google-site-verification" content="ak3gKYsL9ZbjaWPGYCBMambH3srmIZb3Zio3pSby4lo" />
     
