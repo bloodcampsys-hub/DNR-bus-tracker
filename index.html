@@ -16,7 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    
+
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7CSXURS2MSbRctyMLz3GC6HgiKrUOrTQ&loading=async&libraries=maps,marker" async defer></script>
 
 <style>
@@ -230,7 +230,7 @@ textarea.input { resize: vertical; min-height: 92px; }
 .toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 11000; max-width: min(92vw, 460px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
 .toast.warn { background: var(--warn); }
 .toast.error { background: var(--alert); }
-.fatal { margin: 16px; padding: 16px; border-radius: var(--radius); background: var(--alert-soft); color: #8c1a12; font-weight: 600; }
+.fatal { margin: 16px; padding: 16px; border-radius: var(--radius); background: var(--alert-soft); color: #8c1a12; font-weight: 600; overflow-wrap: anywhere; }
 
 @media (max-width: 640px) {
     .container { width: 94%; margin-top: 14px; }
@@ -595,6 +595,13 @@ const STATE_LABEL = { live: 'Running', weak: 'Signal weak', lost: 'Signal lost',
    ===================================================================== */
 const $ = (id) => document.getElementById(id);
 
+/** Shows a persistent error at the top of the page. */
+function showFatal(text) {
+    const f = $('fatal');
+    f.textContent = text;
+    f.hidden = false;
+}
+
 /** Builds DOM safely. Text is always inserted as text nodes, never as HTML. */
 function h(tag, props = {}, ...kids) {
     const el = document.createElement(tag);
@@ -662,16 +669,28 @@ function announce(message) {
 }
 
 /* =====================================================================
-   FIREBASE
+   FIREBASE AND ANONYMOUS SIGN-IN
    ===================================================================== */
-if (typeof firebase === 'undefined') {
-    $('fatal').hidden = false;
+if (typeof firebase === 'undefined' || !firebase.auth) {
+    showFatal('The live-data service didn\'t load, so buses can\'t be tracked right now. Check your internet connection and reload the page.');
     document.querySelectorAll('.role-row').forEach((b) => { b.disabled = true; });
     return;
 }
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
 const ServerValue = firebase.database.ServerValue;
+
+/** Resolves once the visitor is signed in anonymously. Nothing that touches protected data runs before this. */
+const authReady = new Promise((resolve) => {
+    const unsub = auth.onAuthStateChanged((user) => {
+        if (user) { unsub(); resolve(user); }
+    });
+    auth.signInAnonymously().catch((err) => {
+        showFatal('Sign-in failed: ' + (err.code || 'unknown') + '. ' + (err.message || '') +
+            ' Check that Anonymous sign-in is enabled in Firebase Authentication.');
+    });
+});
 
 let serverOffset = 0;
 db.ref('.info/serverTimeOffset').on('value', (s) => { serverOffset = s.val() || 0; });
@@ -868,7 +887,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* =====================================================================
-   AUTH AND SESSION
+   AUTH AND SESSION (portal password gate)
    ===================================================================== */
 const SESSION_KEY = 'dnr_bus_session_v2';
 const gateHash = (role) => role === 'Management' ? SETTINGS.managementPasswordHash : role === 'Driver' ? SETTINGS.driverPinHash : '';
@@ -2104,7 +2123,7 @@ function sendFix(f) {
         speed: Math.round(f.speed), status: 'RUNNING', updatedAt: ServerValue.TIMESTAMP
     })
         .then(() => setDrvMsg('Sharing ' + tracker.bus + ' live.', 'ok'))
-        .catch(() => setDrvMsg("Couldn't send location. Retrying…", 'error'));
+        .catch((err) => setDrvMsg("Couldn't send location: " + (err && err.message ? err.message : 'unknown error') + '. Retrying…', 'error'));
 }
 
 function onPosition(p) {
@@ -2185,16 +2204,18 @@ setInterval(() => {
 }, SETTINGS.clockTickMs);
 
 /* =====================================================================
-   START
+   START: wait for sign-in, then restore the last portal
    ===================================================================== */
 renderRouteOptions();
-const saved = loadSession();
-if (saved) {
-    state.role = saved.role;
-    state.bus = saved.bus;
-    state.stopId = saved.stopId || '';
-    showApp();
-}
+authReady.then(() => {
+    const saved = loadSession();
+    if (saved) {
+        state.role = saved.role;
+        state.bus = saved.bus;
+        state.stopId = saved.stopId || '';
+        showApp();
+    }
+});
 })();
 </script>
 </body>
