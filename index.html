@@ -15,9 +15,8 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA64iRgAN0EmSprGvTaRkBt5aF9i2lDdr0&loading=async&libraries=maps,marker" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7CSXURS2MSbRctyMLz3GC6HgiKrUOrTQ&loading=async&libraries=maps,marker" async defer></script>
 
 <style>
 :root {
@@ -669,28 +668,16 @@ function announce(message) {
 }
 
 /* =====================================================================
-   FIREBASE AND ANONYMOUS SIGN-IN
+   FIREBASE (no sign-in)
    ===================================================================== */
-if (typeof firebase === 'undefined' || !firebase.auth) {
+if (typeof firebase === 'undefined') {
     showFatal('The live-data service didn\'t load, so buses can\'t be tracked right now. Check your internet connection and reload the page.');
     document.querySelectorAll('.role-row').forEach((b) => { b.disabled = true; });
     return;
 }
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const auth = firebase.auth();
 const ServerValue = firebase.database.ServerValue;
-
-/** Resolves once the visitor is signed in anonymously. Nothing that touches protected data runs before this. */
-const authReady = new Promise((resolve) => {
-    const unsub = auth.onAuthStateChanged((user) => {
-        if (user) { unsub(); resolve(user); }
-    });
-    auth.signInAnonymously().catch((err) => {
-        showFatal('Sign-in failed: ' + (err.code || 'unknown') + '. ' + (err.message || '') +
-            ' Check that Anonymous sign-in is enabled in Firebase Authentication.');
-    });
-});
 
 let serverOffset = 0;
 db.ref('.info/serverTimeOffset').on('value', (s) => { serverOffset = s.val() || 0; });
@@ -887,7 +874,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* =====================================================================
-   AUTH AND SESSION (portal password gate)
+   PORTAL PASSWORD GATE AND SESSION
    ===================================================================== */
 const SESSION_KEY = 'dnr_bus_session_v2';
 const gateHash = (role) => role === 'Management' ? SETTINGS.managementPasswordHash : role === 'Driver' ? SETTINGS.driverPinHash : '';
@@ -2204,18 +2191,16 @@ setInterval(() => {
 }, SETTINGS.clockTickMs);
 
 /* =====================================================================
-   START: wait for sign-in, then restore the last portal
+   START
    ===================================================================== */
 renderRouteOptions();
-authReady.then(() => {
-    const saved = loadSession();
-    if (saved) {
-        state.role = saved.role;
-        state.bus = saved.bus;
-        state.stopId = saved.stopId || '';
-        showApp();
-    }
-});
+const saved = loadSession();
+if (saved) {
+    state.role = saved.role;
+    state.bus = saved.bus;
+    state.stopId = saved.stopId || '';
+    showApp();
+}
 })();
 </script>
 </body>
