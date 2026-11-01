@@ -197,6 +197,8 @@ header { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: space-b
 textarea.input { resize: vertical; min-height: 92px; }
 .field-hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .form-error { color: #a82019; font-size: 14px; font-weight: 600; margin-top: -6px; margin-bottom: 10px; min-height: 1.2em; }
+.pick-map { width: 100%; height: 260px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #dfe7f3; overflow: hidden; }
+.pick-hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
 /* Announcements and emergency */
 .ann { padding: 14px 0; border-top: 1px solid var(--line); }
@@ -383,9 +385,11 @@ textarea.input { resize: vertical; min-height: 92px; }
                             <label for="stopName">Stop name</label>
                             <input type="text" id="stopName" class="input" placeholder="Main Canal Junction" maxlength="80" required>
                         </div>
-                        <div class="field-row">
-                            <div class="field"><label for="stopLat">Latitude</label><input type="number" step="any" id="stopLat" class="input" required></div>
-                            <div class="field"><label for="stopLng">Longitude</label><input type="number" step="any" id="stopLng" class="input" required></div>
+                        <div class="field">
+                            <label>Stop location</label>
+                            <div id="stopPickMap" class="pick-map" role="region" aria-label="Map to choose the stop location"></div>
+                            <p class="pick-hint" id="stopPickHint">Tap the map to place the stop, or drag the pin to adjust it.</p>
+                            <button type="button" class="btn btn-quiet btn-small" id="stopUseMyLocation" style="margin-top:8px">Use my current location</button>
                         </div>
                         <button type="submit" class="btn btn-primary btn-wide">Add stop</button>
                     </form>
@@ -570,7 +574,7 @@ const SETTINGS = {
     sirenCycles: 25,
     sirenCycleSec: 1.2,
     sirenGain: 0.3,
-    globalAlertCooldownMs: 10 * 60 * 1000,  // one student global alert per student ID per 10 minutes
+    globalAlertCooldownMs: 10 * 60 * 1000,
     announcementLimit: 50,
     sosLimit: 100,
     clockTickMs: 5000,
@@ -689,7 +693,7 @@ const state = {
     stops: {},
     fleet: {},
     fleetStates: {},
-    sos: [],            // unresolved student alerts (management and driver only)
+    sos: [],
     annAll: [],
     seenAnn: null,
     alertKey: '',
@@ -1081,6 +1085,7 @@ function showApp() {
     renderLive();
     renderAnnouncements();
     updateDriverUI();
+    if (state.role === 'Management') ensurePicker();
     window.scrollTo(0, 0);
 }
 
@@ -1116,7 +1121,7 @@ function waitForGoogle() {
     });
 }
 
-/** Creates the map once. Every caller awaits the same promise. */
+/** Creates the main map once. Every caller awaits the same promise. */
 function ensureMap() {
     if (!mapPromise) mapPromise = createMap();
     return mapPromise;
@@ -1527,7 +1532,7 @@ function checkApproach() {
 }
 
 /* =====================================================================
-   MANAGEMENT: STOPS, BUSES, ANNOUNCEMENTS
+   MANAGEMENT: STOPS (with map picker), BUSES, ANNOUNCEMENTS
    ===================================================================== */
 function renderStopsList() {
     if (state.role !== 'Management') return;
@@ -1550,18 +1555,93 @@ $('mgmtStopList').addEventListener('click', (e) => {
         .catch(() => toast("Couldn't delete the stop.", 'error'));
 });
 
+/* ---- Stop location picker ---- */
+let picker = null;
+let pickerPromise = null;
+
+function ensurePicker() {
+    if (!pickerPromise) pickerPromise = createPicker();
+    return pickerPromise;
+}
+
+const latOf = (p) => (typeof p.lat === 'function' ? p.lat() : p.lat);
+const lngOf = (p) => (typeof p.lng === 'function' ? p.lng() : p.lng);
+
+function setPickedPoint(lat, lng, { recenter = false } = {}) {
+    if (!picker) return;
+    picker.lat = lat;
+    picker.lng = lng;
+    picker.marker.position = { lat, lng };
+    if (recenter) picker.map.panTo({ lat, lng });
+    $('stopPickHint').textContent = 'Selected: ' + lat.toFixed(5) + ', ' + lng.toFixed(5) + '. Drag the pin to adjust.';
+}
+
+function defaultPickCenter() {
+    const routeId = $('stopRouteId').value;
+    const first = Object.values(state.stops).find((s) => s.routeId === routeId);
+    return first ? { lat: first.lat, lng: first.lng } : { lat: C.lat, lng: C.lng };
+}
+
+async function createPicker() {
+    try {
+        await waitForGoogle();
+        const { Map: GoogleMap } = await google.maps.importLibrary('maps');
+        const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
+
+        const start = defaultPickCenter();
+        const map = new GoogleMap($('stopPickMap'), {
+            center: start,
+            zoom: 14,
+            mapId: SETTINGS.mapId,
+            streetViewControl: false,
+            mapTypeControl: false
+        });
+        const marker = new AdvancedMarkerElement({ map, position: start, gmpDraggable: true, title: 'Stop location' });
+        picker = { map, marker, lat: null, lng: null };
+
+        map.addListener('click', (e) => setPickedPoint(latOf(e.latLng), lngOf(e.latLng)));
+        marker.addListener('dragend', () => setPickedPoint(latOf(marker.position), lngOf(marker.position)));
+        return picker;
+    } catch (err) {
+        $('stopPickMap').replaceChildren(h('p', { class: 'map-error' }, "The map didn't load. Check your internet connection and reload."));
+        return null;
+    }
+}
+
+$('stopRouteId').addEventListener('change', async () => {
+    const p = await ensurePicker();
+    if (p) p.map.panTo(defaultPickCenter());
+});
+
+$('stopUseMyLocation').addEventListener('click', async () => {
+    const p = await ensurePicker();
+    if (!p) return;
+    if (!navigator.geolocation) { toast("This device can't share its location.", 'warn'); return; }
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            setPickedPoint(pos.coords.latitude, pos.coords.longitude, { recenter: true });
+            p.map.setZoom(17);
+        },
+        () => toast("Couldn't get your location.", 'warn'),
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+});
+
 $('addStopForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const routeId = $('stopRouteId').value;
     const name = $('stopName').value.trim().slice(0, 80);
-    const lat = parseFloat($('stopLat').value), lng = parseFloat($('stopLng').value);
     if (!state.routes[routeId]) { toast('Pick a route.', 'warn'); return; }
     if (!name) { toast('Enter a stop name.', 'warn'); return; }
-    if (!validLatLng(lat, lng)) { toast('Enter a valid latitude and longitude.', 'warn'); return; }
+    if (!picker || picker.lat == null) { toast('Tap the map to place the stop first.', 'warn'); return; }
+    if (!validLatLng(picker.lat, picker.lng)) { toast('That location is not valid. Pick another point.', 'warn'); return; }
     try {
-        await db.ref('stops').push({ routeId, name, lat, lng });
+        await db.ref('stops').push({ routeId, name, lat: picker.lat, lng: picker.lng });
         toast('Stop added.');
-        $('stopName').value = ''; $('stopLat').value = ''; $('stopLng').value = '';
+        $('stopName').value = '';
+        picker.lat = null;
+        picker.lng = null;
+        $('stopPickHint').textContent = 'Tap the map to place the stop, or drag the pin to adjust it.';
     } catch (err) {
         toast("Couldn't add the stop.", 'error');
     }
