@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<!-- Google Search Console Verification -->
-<meta name="google-site-verification" content="ak3gKYsL9ZbjaWPGYCBMambH3srmIZb3Zio3pSby4lo" />
-    
+<meta name="google-site-verification" content="ak3gKYsL9ZbjaWPGYCBMambH3srmIZb3Zio3pSby4lo">
 <title>DNR College Bus Tracker</title>
 <meta name="description" content="Live location, arrival time and alerts for every DNR College of Engineering & Technology bus.">
 <meta name="theme-color" content="#0b1f44">
@@ -15,11 +13,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-<!-- Native Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7CSXURS2MSbRctyMLz3GC6HgiKrUOrTQ&loading=async&libraries=maps,marker" async defer></script>
 
 <style>
@@ -30,20 +26,16 @@
     --warn: #7a4b00; --warn-soft: #fff1cf; --alert: #c8281e; --alert-soft: #fde8e6;
     --radius: 14px; --radius-sm: 10px;
 }
-
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-
 html { -webkit-text-size-adjust: 100%; }
 body {
     margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     font-size: 16px; line-height: 1.5; background: var(--page); color: var(--text); min-height: 100vh;
 }
-
 h1, h2, h3, p { margin: 0; }
 button { font: inherit; }
 :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
-
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .muted { color: var(--muted); }
 
@@ -51,7 +43,7 @@ button { font: inherit; }
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 44px; padding: 10px 18px; border: 1px solid transparent; border-radius: var(--radius-sm);
-    font-weight: 600; font-size: 15px; line-height: 1.2; cursor: pointer; transition: all .15s;
+    font-weight: 600; font-size: 15px; line-height: 1.2; cursor: pointer; transition: background-color .15s, border-color .15s;
 }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
@@ -70,13 +62,24 @@ button { font: inherit; }
 .btn-wide { width: 100%; }
 .btn-lg { min-height: 54px; font-size: 17px; }
 
+/* Visibility by portal and mode */
+.for-student, .for-driver, .for-mgmt, .mode-all, .mode-bus { display: none; }
+body[data-role="Student"] .for-student,
+body[data-role="Driver"] .for-driver,
+body[data-role="Management"] .for-mgmt { display: block; }
+body[data-role="Student"] button.for-student { display: inline-flex; }
+body[data-mode="all"] .mode-all { display: block; }
+body[data-mode="bus"] .mode-bus { display: block; }
+
 /* Entry screen */
 #roleSelectionScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
 .role-wrap { width: 100%; max-width: 640px; }
 
 .board {
     display: grid; grid-template-columns: auto 1fr auto; gap: 8px 22px; align-items: center;
-    background-color: var(--ink); background-image: radial-gradient(rgba(255, 184, 28, .09) 1px, transparent 1.4px); background-size: 6px 6px; color: var(--amber); padding: 22px 26px; font-family: 'DotGothic16', monospace;
+    background-color: var(--ink);
+    background-image: radial-gradient(rgba(255, 184, 28, .09) 1px, transparent 1.4px); background-size: 6px 6px;
+    color: var(--amber); padding: 22px 26px; font-family: 'DotGothic16', monospace;
 }
 .board-num { min-width: 1.7em; padding: .1em .26em; border-radius: 8px; text-align: center; background: var(--amber); color: var(--ink); font-size: clamp(38px, 8vw, 62px); line-height: 1.05; }
 .board-route { font-size: clamp(20px, 3.8vw, 30px); line-height: 1.2; overflow-wrap: anywhere; }
@@ -84,13 +87,11 @@ button { font: inherit; }
 .board-eta { text-align: right; }
 .board-eta-val { font-size: clamp(28px, 5vw, 44px); line-height: 1.05; white-space: nowrap; }
 .board-eta-sub { margin-top: 6px; font-size: 13px; color: rgba(255, 184, 28, .82); max-width: 18ch; margin-left: auto; }
-
 .board[data-state="offline"] .board-route, .board[data-state="offline"] .board-eta-val { opacity: .6; }
 .board[data-state="offline"] .board-num { background: #8995ad; }
 .board[data-state="lost"] .board-num { background: #ff9a8f; }
 .board[data-state="lost"] .board-line { color: #ffb4ab; }
 .board[data-state="weak"] .board-line { color: #ffd980; }
-
 .board-title { border-radius: var(--radius); margin-bottom: 20px; grid-template-columns: auto 1fr; align-items: center; }
 .board-title h1 { font: inherit; font-size: clamp(28px, 6.4vw, 46px); line-height: 1.1; }
 .board-title .board-num { font-size: clamp(36px, 8vw, 54px); }
@@ -125,22 +126,16 @@ header { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: space-b
 .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
 .card-head h2 { margin: 0; }
 .card-sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
-
-/* Display rules for roles */
-.for-driver, .for-mgmt, .for-all, .for-student { display: none; }
-body[data-role="Driver"] .for-driver { display: block; }
-body[data-role="Management"] .for-mgmt { display: block; }
-body[data-role="Student"] .for-student { display: block; }
-body[data-mode="all"] .for-all { display: block; }
-body[data-mode="all"] .for-all.grid-2 { display: grid; }
-body[data-mode="all"] .for-bus { display: none; }
+.card.emergency-active { background: var(--alert-soft); border-color: #ef9a93; }
+.card.sos-card { border-color: var(--alert); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 
 /* Bus hero */
 .hero { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; background: var(--surface); }
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); margin: 0; }
 .facts > div { background: var(--surface); padding: 14px 18px; }
 .facts dt { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-.facts dd { margin: 0; font-size: 18px; font-weight: 700; }
+.facts dd { margin: 0; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
 
 .badge { display: inline-flex; align-items: center; gap: 7px; padding: 3px 11px; border-radius: 999px; font-size: 14px; font-weight: 700; background: #eceff5; color: #475569; }
 .badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
@@ -153,6 +148,7 @@ body[data-mode="all"] .for-bus { display: none; }
 /* Map */
 .map-tools { display: flex; flex-wrap: wrap; gap: 8px; }
 #map { position: relative; z-index: 0; width: 100%; height: 56vh; min-height: 340px; max-height: 560px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #dfe7f3; overflow: hidden; }
+.map-error { padding: 16px; color: var(--muted); }
 .pin-wrap { background: none; border: none; }
 .pin { position: relative; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(11, 31, 68, .35); }
 .pin-live { background: var(--live); }
@@ -161,14 +157,13 @@ body[data-mode="all"] .for-bus { display: none; }
 .pin-college { background: var(--ink); }
 .pin-sos { background: var(--alert); animation: pulseSos 1.5s infinite; }
 .pin-live::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--live); animation: ring 2s ease-out infinite; }
+.you-dot { width: 16px; height: 16px; background: #1d4ed8; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 4px rgba(0, 0, 0, .4); }
 @keyframes ring { from { transform: scale(.8); opacity: .9; } to { transform: scale(1.5); opacity: 0; } }
-@keyframes pulseSos { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 40, 30, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(200, 40, 30, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 40, 30, 0); } }
-
-/* Fix InfoWindow styles for GMaps */
-.gm-style-iw { border-radius: 12px !important; padding: 12px !important; }
-.gm-style-iw-d { overflow: hidden !important; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; }
-.gm-style-iw-d strong { font-size: 15px; color: var(--text); }
-.gm-style-iw-d span { color: var(--muted); }
+@keyframes pulseSos { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 40, 30, .7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(200, 40, 30, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 40, 30, 0); } }
+.iw { font-size: 14px; line-height: 1.4; color: var(--text); max-width: 240px; }
+.iw span { color: var(--muted); }
+.iw strong { font-size: 15px; }
+.gm-style-iw { border-radius: 12px !important; }
 
 /* Driver */
 .notice { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--blue-soft); color: var(--ink); font-size: 14px; }
@@ -178,35 +173,40 @@ body[data-mode="all"] .for-bus { display: none; }
 .notice:empty { display: none; }
 .driver-facts { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
 
-/* Fleet and Lists */
+/* Lists */
 .list-row, .fleet-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
 .list-row:first-child, .fleet-row:first-child { border-top: none; padding-top: 0; }
 .list-badge, .fleet-badge { min-width: 46px; height: 46px; padding: 0 8px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 17px; background: var(--blue-soft); color: var(--blue-dark); }
+.list-badge.sos { background: var(--alert); color: #fff; }
 .fleet-main strong { display: block; }
 .fleet-main .muted { font-size: 14px; }
 .fleet-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin-top: 4px; font-size: 14px; }
 .fleet-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.sos-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border-radius: var(--radius-sm); background: var(--alert-soft); margin-bottom: 10px; }
 .empty { color: var(--muted); padding: 6px 0; }
+.stop-list { margin-top: 15px; }
 
 /* Forms */
-.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-.grid-2.for-all { display: none; }
 .field { margin-bottom: 14px; }
+.field[hidden] { display: none !important; }
 .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.field-row { display: flex; gap: 10px; }
+.field-row .field { flex: 1; min-width: 0; }
 .input { width: 100%; padding: 11px 12px; font: inherit; font-size: 16px; color: var(--text); background: #fff; border: 1px solid #b8c4d8; border-radius: var(--radius-sm); }
 .input:hover { border-color: #8e9db8; }
 textarea.input { resize: vertical; min-height: 92px; }
 .field-hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.form-error { color: #a82019; font-size: 14px; font-weight: 600; margin-top: -6px; margin-bottom: 10px; min-height: 1.2em; }
 
-/* Announcements + Emergency */
+/* Announcements and emergency */
 .ann { padding: 14px 0; border-top: 1px solid var(--line); }
 .ann:first-child { border-top: none; padding-top: 0; }
 .ann-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 4px; }
 .ann-head time { color: var(--muted); font-size: 13px; }
 .ann p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .chip { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--blue-soft); color: var(--blue-dark); }
-.card.emergency-active { background: var(--alert-soft); border-color: #ef9a93; }
 .em-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; font-weight: 600; color: #8c1a12; }
+.em-by { font-size: 13px; font-weight: 500; color: #8c1a12; opacity: .85; }
 
 /* Modals */
 .modal { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(11, 31, 68, .55); }
@@ -215,9 +215,7 @@ textarea.input { resize: vertical; min-height: 92px; }
 .modal-box h2 { font-size: 21px; margin-bottom: 4px; }
 .modal-sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
 .modal-actions { display: grid; gap: 10px; margin-top: 18px; }
-.form-error { color: #a82019; font-size: 14px; font-weight: 600; margin-top: -6px; margin-bottom: 10px; min-height: 1.2em; }
-
-.route-list { display: grid; gap: 10px; }
+.route-list { display: grid; gap: 10px; margin-bottom: 15px; }
 .route-card { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); cursor: pointer; }
 .route-card:hover { border-color: #8e9db8; }
 .route-card[aria-checked="true"] { border-color: var(--blue); background: var(--blue-soft); box-shadow: inset 0 0 0 1px var(--blue); }
@@ -229,7 +227,6 @@ textarea.input { resize: vertical; min-height: 92px; }
 .toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 11000; max-width: min(92vw, 460px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
 .toast.warn { background: var(--warn); }
 .toast.error { background: var(--alert); }
-
 .fatal { margin: 16px; padding: 16px; border-radius: var(--radius); background: var(--alert-soft); color: #8c1a12; font-weight: 600; }
 
 @media (max-width: 640px) {
@@ -242,6 +239,7 @@ textarea.input { resize: vertical; min-height: 92px; }
     .fleet-row, .list-row { grid-template-columns: auto 1fr; }
     .fleet-actions { grid-column: 1 / -1; justify-content: flex-start; }
     .role-row { padding: 14px; }
+    .field-row { flex-direction: column; gap: 0; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -262,14 +260,14 @@ textarea.input { resize: vertical; min-height: 92px; }
         <p class="lede">See where your bus is, when it will reach college, and what is happening on your route.</p>
 
         <h2 class="sr-only">Choose your portal</h2>
-        <div class="role-list">
+        <div class="role-list" id="roleList">
             <button type="button" class="role-row" data-role="Student">
                 <span class="role-icon" aria-hidden="true">🎓</span>
-                <span class="role-text"><strong>Student portal</strong><span>Track your bus live, get approach alerts and raise SOS.</span></span>
+                <span class="role-text"><strong>Student portal</strong><span>Track your bus live, get approach alerts, raise a global alert or send SOS.</span></span>
             </button>
             <button type="button" class="role-row" data-role="Driver">
                 <span class="role-icon" aria-hidden="true">🚌</span>
-                <span class="role-text"><strong>Driver portal</strong><span>Share your bus's live location and monitor SOS alerts.</span></span>
+                <span class="role-text"><strong>Driver portal</strong><span>Share your bus's live location and monitor alerts.</span></span>
             </button>
             <button type="button" class="role-row" data-role="Management">
                 <span class="role-icon" aria-hidden="true">⚙️</span>
@@ -287,8 +285,8 @@ textarea.input { resize: vertical; min-height: 92px; }
             <div class="logo"><span class="logo-mark" aria-hidden="true">🚌</span>DNR Bus Tracker</div>
             <div class="header-actions">
                 <span class="role-chip" id="roleChip">Student</span>
-                <!-- Student SOS Button -->
-                <button type="button" class="btn btn-danger btn-small for-student" id="openSosBtn">SOS Emergency</button>
+                <button type="button" class="btn btn-danger btn-small for-student" id="openSosBtn">SOS emergency</button>
+                <button type="button" class="btn btn-danger btn-small for-student" id="openGlobalBtn">Global alert</button>
                 <button type="button" class="btn btn-quiet btn-small" id="changeRouteBtn">Change route</button>
                 <button type="button" class="btn btn-ghost-danger btn-small" id="exitBtn">Exit portal</button>
             </div>
@@ -302,8 +300,8 @@ textarea.input { resize: vertical; min-height: 92px; }
     </div>
 
     <div class="container">
-        <!-- Bus hero: the destination board -->
-        <section class="hero for-bus" aria-label="Selected bus">
+        <!-- Bus hero -->
+        <section class="hero mode-bus" aria-label="Selected bus">
             <div class="board" id="hero" data-state="offline">
                 <div class="board-num" id="boardNum">01</div>
                 <div>
@@ -318,8 +316,8 @@ textarea.input { resize: vertical; min-height: 92px; }
             <dl class="facts">
                 <div><dt>Status</dt><dd id="factStatus"><span class="badge">Offline</span></dd></div>
                 <div><dt>Speed</dt><dd id="factSpeed">0 km/h</dd></div>
-                <div class="for-student"><dt>My Boarding Stop</dt><dd id="factStop">Not selected</dd></div>
-                <div class="for-student"><dt>Dist. to My Stop</dt><dd id="factStopDist">--</dd></div>
+                <div class="for-student"><dt>My boarding stop</dt><dd id="factStop">Not selected</dd></div>
+                <div class="for-student"><dt>Distance to my stop</dt><dd id="factStopDist">--</dd></div>
                 <div class="for-mgmt for-driver"><dt>GPS signal</dt><dd id="factGps">Offline</dd></div>
                 <div class="for-mgmt for-driver"><dt>Distance to college</dt><dd id="factDist">--</dd></div>
             </dl>
@@ -330,88 +328,89 @@ textarea.input { resize: vertical; min-height: 92px; }
             <div class="card-head">
                 <h2 id="mapTitle">Live map</h2>
                 <div class="map-tools">
-                    <button type="button" class="btn btn-quiet btn-small for-bus" id="followBtn" aria-pressed="true" style="display:none">Following bus</button>
-                    <button type="button" class="btn btn-quiet btn-small" id="fitBtn">Fit map bounds</button>
+                    <button type="button" class="btn btn-quiet btn-small mode-bus" id="followBtn" aria-pressed="true">Following bus</button>
+                    <button type="button" class="btn btn-quiet btn-small" id="fitBtn">Show whole route</button>
                     <button type="button" class="btn btn-quiet btn-small" id="locateBtn">My location</button>
                 </div>
             </div>
             <div id="map" role="region" aria-label="Map showing live bus locations"></div>
         </section>
 
-        <!-- Active SOS Display (Mgmt & Driver) -->
-        <section class="card for-mgmt for-driver" style="border-color: var(--alert);">
-            <h2>Active Student SOS Alerts</h2>
-            <div id="activeSosList"><p class="muted">No active SOS alerts.</p></div>
+        <!-- Active alerts (driver and management) -->
+        <section class="card sos-card for-mgmt for-driver" aria-labelledby="sosListTitle">
+            <h2 id="sosListTitle">Active student alerts</h2>
+            <div id="activeSosList"><p class="muted">No active alerts.</p></div>
         </section>
 
         <!-- Management: fleet overview -->
-        <section class="card for-all" aria-labelledby="fleetTitle">
-            <div class="card-head"><h2 id="fleetTitle">All buses</h2></div>
-            <div id="fleetList"></div>
-            <p class="empty" id="fleetEmpty" hidden>No buses yet. Register your first bus below.</p>
-        </section>
-
-        <!-- Management: tools -->
-        <div class="grid-2 for-all for-mgmt">
-            <!-- Add Route -->
-            <section class="card" aria-labelledby="addBusTitle">
-                <h2 id="addBusTitle">Register a bus</h2>
-                <p class="card-sub">Add a new bus and its route. Registering an existing bus ID updates its route name.</p>
-                <form id="addBusForm" autocomplete="off">
-                    <div class="field">
-                        <label for="newBusId">Bus ID</label>
-                        <input type="text" id="newBusId" class="input" placeholder="BUS-04" maxlength="12" required>
-                        <div class="field-hint">Letters, numbers and dashes, 2 to 12 characters.</div>
-                    </div>
-                    <div class="field">
-                        <label for="newBusRoute">Route Name</label>
-                        <input type="text" id="newBusRoute" class="input" placeholder="Amalapuram → DNR College" maxlength="80" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-wide">Register bus</button>
-                </form>
-            </section>
-
-            <!-- Stop Management (New) -->
-            <section class="card" aria-labelledby="addStopTitle">
-                <h2 id="addStopTitle">Manage Stops</h2>
-                <p class="card-sub">Add boarding stops for approach notifications.</p>
-                <form id="addStopForm">
-                    <div class="field">
-                        <label>Route ID</label>
-                        <input type="text" id="stopRouteId" class="input" placeholder="BUS-01" required>
-                    </div>
-                    <div class="field">
-                        <label>Stop Name</label>
-                        <input type="text" id="stopName" class="input" placeholder="Main Canal Junction" required>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <div class="field" style="flex:1"><label>Lat</label><input type="number" step="any" id="stopLat" class="input" required></div>
-                        <div class="field" style="flex:1"><label>Lng</label><input type="number" step="any" id="stopLng" class="input" required></div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-wide">Add Stop</button>
-                </form>
-                <div id="mgmtStopList" style="margin-top: 15px;"></div>
+        <div class="for-mgmt mode-all">
+            <section class="card" aria-labelledby="fleetTitle">
+                <div class="card-head"><h2 id="fleetTitle">All buses</h2></div>
+                <div id="fleetList"></div>
+                <p class="empty" id="fleetEmpty" hidden>No buses yet. Register your first bus below.</p>
             </section>
         </div>
 
-        <div class="grid-2 for-all for-mgmt">
-            <!-- Announcements -->
-            <section class="card" aria-labelledby="broadcastTitle">
-                <h2 id="broadcastTitle">Post an announcement</h2>
-                <p class="card-sub">Students and drivers see it right away, with a short alert sound.</p>
-                <form id="broadcastForm">
-                    <div class="field">
-                        <label for="annTarget">Send to</label>
-                        <select id="annTarget" class="input"></select>
-                    </div>
-                    <div class="field">
-                        <label for="annMsg">Message</label>
-                        <textarea id="annMsg" class="input" maxlength="500" placeholder="Bus 02 will leave 10 minutes late today."></textarea>
-                        <div class="field-hint"><span id="annCount">0</span> / 500</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-wide">Post announcement</button>
-                </form>
-            </section>
+        <!-- Management: tools -->
+        <div class="for-mgmt">
+            <div class="grid-2">
+                <section class="card mode-all" aria-labelledby="addBusTitle">
+                    <h2 id="addBusTitle">Register a bus</h2>
+                    <p class="card-sub">Add a new bus and its route. Registering an existing bus ID updates its route name.</p>
+                    <form id="addBusForm" autocomplete="off">
+                        <div class="field">
+                            <label for="newBusId">Bus ID</label>
+                            <input type="text" id="newBusId" class="input" placeholder="BUS-04" maxlength="12" required>
+                            <div class="field-hint">Letters, numbers and dashes, 2 to 12 characters.</div>
+                        </div>
+                        <div class="field">
+                            <label for="newBusRoute">Route name</label>
+                            <input type="text" id="newBusRoute" class="input" placeholder="Amalapuram → DNR College" maxlength="80" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-wide">Register bus</button>
+                    </form>
+                </section>
+
+                <section class="card" aria-labelledby="addStopTitle">
+                    <h2 id="addStopTitle">Manage stops</h2>
+                    <p class="card-sub">Add boarding stops for approach alerts.</p>
+                    <form id="addStopForm" autocomplete="off">
+                        <div class="field">
+                            <label for="stopRouteId">Route</label>
+                            <select id="stopRouteId" class="input" required></select>
+                        </div>
+                        <div class="field">
+                            <label for="stopName">Stop name</label>
+                            <input type="text" id="stopName" class="input" placeholder="Main Canal Junction" maxlength="80" required>
+                        </div>
+                        <div class="field-row">
+                            <div class="field"><label for="stopLat">Latitude</label><input type="number" step="any" id="stopLat" class="input" required></div>
+                            <div class="field"><label for="stopLng">Longitude</label><input type="number" step="any" id="stopLng" class="input" required></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-wide">Add stop</button>
+                    </form>
+                    <div id="mgmtStopList" class="stop-list"></div>
+                </section>
+            </div>
+
+            <div class="grid-2">
+                <section class="card" aria-labelledby="broadcastTitle">
+                    <h2 id="broadcastTitle">Post an announcement</h2>
+                    <p class="card-sub">Students and drivers see it right away, with a short alert sound.</p>
+                    <form id="broadcastForm">
+                        <div class="field">
+                            <label for="annTarget">Send to</label>
+                            <select id="annTarget" class="input"></select>
+                        </div>
+                        <div class="field">
+                            <label for="annMsg">Message</label>
+                            <textarea id="annMsg" class="input" maxlength="500" placeholder="Bus 02 will leave 10 minutes late today."></textarea>
+                            <div class="field-hint"><span id="annCount">0</span> / 500</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-wide">Post announcement</button>
+                    </form>
+                </section>
+            </div>
         </div>
 
         <!-- Driver controls -->
@@ -428,9 +427,9 @@ textarea.input { resize: vertical; min-height: 92px; }
             <p class="notice" id="drvMsg" role="status"></p>
         </section>
 
-        <!-- General Bus Emergency -->
+        <!-- Global bus alert (all portals) -->
         <section class="card" id="emergencyCard" aria-labelledby="emergencyTitle">
-            <h2 id="emergencyTitle">Bus Emergency (Global Alert)</h2>
+            <h2 id="emergencyTitle">Bus emergency (global)</h2>
             <div id="emergencyBody"></div>
         </section>
 
@@ -440,7 +439,7 @@ textarea.input { resize: vertical; min-height: 92px; }
                 <h2 id="annTitle">Announcements</h2>
                 <button type="button" class="btn btn-quiet btn-small" id="notifyBtn" hidden>Turn on notifications</button>
             </div>
-            <div id="announceList"><p class="empty">Loading announcements…</p></div>
+            <div id="announceList" aria-live="polite"><p class="empty">Loading announcements…</p></div>
         </section>
     </div>
 </div>
@@ -450,15 +449,12 @@ textarea.input { resize: vertical; min-height: 92px; }
     <div class="modal-box">
         <h2 id="modalTitle">Choose a route</h2>
         <p class="modal-sub" id="modalSub"></p>
-        <div class="route-list" id="routeList" role="radiogroup" aria-labelledby="modalTitle" style="margin-bottom:15px;"></div>
-        
-        <!-- Stop Selector for approach notifications -->
-        <div class="field for-student" id="stopSelectWrapper">
-            <label>Select Boarding Stop</label>
-            <select id="stopSelectDropdown" class="input">
-                <option value="">None / Direct to College</option>
-            </select>
-            <p class="muted" style="font-size:12px; margin-top:4px;">We'll notify you when the bus is 2km away.</p>
+        <div class="route-list" id="routeList" role="radiogroup" aria-labelledby="modalTitle"></div>
+
+        <div class="field" id="stopSelectWrapper" hidden>
+            <label for="stopSelectDropdown">Boarding stop</label>
+            <select id="stopSelectDropdown" class="input"></select>
+            <p class="field-hint">We'll notify you when the bus is about 2 km away.</p>
         </div>
 
         <div class="modal-actions">
@@ -485,9 +481,14 @@ textarea.input { resize: vertical; min-height: 92px; }
 </div>
 
 <div class="modal" id="emergencyModal" role="dialog" aria-modal="true" aria-labelledby="emTitle">
-    <form class="modal-box" id="emergencyForm">
-        <h2 id="emTitle">Raise an emergency alert for <span id="emBus">BUS-01</span>?</h2>
-        <p class="modal-sub">Everyone on this route will hear a siren and see the alert until someone marks it resolved.</p>
+    <form class="modal-box" id="emergencyForm" autocomplete="off">
+        <h2 id="emTitle">Raise a global alert for <span id="emBus">BUS-01</span>?</h2>
+        <p class="modal-sub">Everyone on this route will hear a siren and see the alert until management or the driver marks it resolved.</p>
+        <div class="field" id="emStudentWrap" hidden>
+            <label for="emStudentId">Your student ID</label>
+            <input type="text" id="emStudentId" class="input" maxlength="30" placeholder="24354-CM-031">
+            <div class="field-hint">Shown on the alert so management knows who raised it.</div>
+        </div>
         <div class="field">
             <label for="emReason">What is happening?</label>
             <select id="emReason" class="input">
@@ -503,23 +504,22 @@ textarea.input { resize: vertical; min-height: 92px; }
             <input type="text" id="emNote" class="input" maxlength="120" placeholder="For example: flat tyre near the toll gate">
         </div>
         <div class="modal-actions">
-            <button type="submit" class="btn btn-danger">Raise alert</button>
+            <button type="submit" class="btn btn-danger" id="emSubmit">Raise alert</button>
             <button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
         </div>
     </form>
 </div>
 
-<!-- Student SOS Modal -->
-<div class="modal" id="sosModal">
-    <form class="modal-box" id="sosForm">
-        <h2>🚨 Send SOS Emergency Alert</h2>
-        <p class="muted" style="margin-bottom:15px;">This will capture your live GPS location and alert management and drivers immediately. Use only in actual emergencies.</p>
+<div class="modal" id="sosModal" role="dialog" aria-modal="true" aria-labelledby="sosTitle">
+    <form class="modal-box" id="sosForm" autocomplete="off">
+        <h2 id="sosTitle">Send SOS emergency alert</h2>
+        <p class="modal-sub">This captures your live GPS location and alerts management and the driver immediately. Use only in an actual emergency.</p>
         <div class="field">
-            <label>Student ID</label>
-            <input type="text" id="sosStudentId" class="input" placeholder="24354-CM-031" required>
+            <label for="sosStudentId">Student ID</label>
+            <input type="text" id="sosStudentId" class="input" placeholder="24354-CM-031" maxlength="30" required>
         </div>
         <div class="modal-actions">
-            <button type="submit" class="btn btn-danger">Send SOS Alert</button>
+            <button type="submit" class="btn btn-danger" id="sosSubmit">Send SOS alert</button>
             <button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
         </div>
     </form>
@@ -533,7 +533,7 @@ textarea.input { resize: vertical; min-height: 92px; }
 'use strict';
 
 /* =====================================================================
-   SETTINGS
+   CONFIG
    ===================================================================== */
 const firebaseConfig = {
     apiKey: "AIzaSyCsiL4nML9FD4skd_v0850zsdQTCeqYg8M",
@@ -549,7 +549,31 @@ const SETTINGS = {
     college: { name: 'DNR College of Engineering & Technology', lat: 16.5358, lng: 81.5186 },
     managementPasswordHash: '5a23444828db654a0eaef5f81aabe79432871f43f73ea888279b3ee212f98a7b',
     driverPinHash: '',
-    staleAfterSec: 30, lostAfterSec: 120, gpsSendEveryMs: 3000, heartbeatEveryMs: 10000, roadFactor: 1.3, fallbackSpeedKmh: 30, announcementLimit: 50, approachRadiusKm: 2.0,
+    mapId: 'DEMO_MAP_ID',              // replace with your own Map ID for production
+    staleAfterSec: 30,
+    lostAfterSec: 120,
+    gpsSendEveryMs: 3000,
+    heartbeatEveryMs: 10000,
+    maxFixAgeMs: 60000,
+    driverStaleSpeedMs: 8000,
+    gpsWarnAccuracyM: 100,
+    roadFactor: 1.3,
+    fallbackSpeedKmh: 30,
+    minSpeedForEtaKmh: 8,
+    arrivedRadiusKm: 0.2,
+    approachRadiusKm: 2.0,
+    approachHysteresisKm: 0.5,
+    routeRefetchGridDeg: 0.01,
+    osrmBase: 'https://router.project-osrm.org/route/v1/driving/',
+    osrmTimeoutMs: 8000,
+    mapsWaitMs: 15000,
+    sirenCycles: 25,
+    sirenCycleSec: 1.2,
+    sirenGain: 0.3,
+    globalAlertCooldownMs: 10 * 60 * 1000,  // one student global alert per student ID per 10 minutes
+    announcementLimit: 50,
+    sosLimit: 100,
+    clockTickMs: 5000,
     defaultRoutes: {
         'BUS-01': { name: 'Bhyravapatnam -> DNR College of Eng.' },
         'BUS-02': { name: 'Ganapavaram -> DNR College of Eng.' },
@@ -559,31 +583,44 @@ const SETTINGS = {
 
 const BUS_ID = /^[A-Z0-9-]{2,12}$/;
 const C = SETTINGS.college;
+const STATE_LABEL = { live: 'Running', weak: 'Signal weak', lost: 'Signal lost', offline: 'Offline' };
 
-/* Helpers */
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
 const $ = (id) => document.getElementById(id);
+
+/** Builds DOM safely. Text is always inserted as text nodes, never as HTML. */
 function h(tag, props = {}, ...kids) {
     const el = document.createElement(tag);
     for (const [k, v] of Object.entries(props)) {
         if (v == null || v === false) continue;
-        if (k === 'class') el.className = v; else if (k === 'dataset') Object.assign(el.dataset, v);
+        if (k === 'class') el.className = v;
+        else if (k === 'dataset') Object.assign(el.dataset, v);
         else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
-        else el.setAttribute(k, v === true ? '' : v);
+        else el.setAttribute(k, v === true ? '' : String(v));
     }
-    for (const kid of kids.flat()) { if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(String(kid))); }
+    for (const kid of kids.flat()) {
+        if (kid == null || kid === false) continue;
+        el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+    }
     return el;
 }
 
 const compareBus = (a, b) => a.localeCompare(b, undefined, { numeric: true });
-const busBadge = (key) => key === 'ALL' ? 'All' : key.replace(/^BUS-/, '');
+const busBadge = (key) => key.replace(/^BUS-/, '');
 const prettyRoute = (name) => String(name || '').replace(/\s*-+>\s*/g, ' → ');
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const validLatLng = (lat, lng) => isNum(lat) && isNum(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 
 function ago(ms) {
     const s = Math.max(0, Math.round(ms / 1000));
-    if (s < 5) return 'just now'; if (s < 60) return s + 's ago';
-    const m = Math.round(s / 60); if (m < 60) return m + ' min ago';
-    const hr = Math.round(m / 60); if (hr < 24) return hr + ' h ago';
+    if (s < 5) return 'just now';
+    if (s < 60) return s + 's ago';
+    const m = Math.round(s / 60);
+    if (m < 60) return m + ' min ago';
+    const hr = Math.round(m / 60);
+    if (hr < 24) return hr + ' h ago';
     return Math.round(hr / 24) + ' d ago';
 }
 
@@ -605,74 +642,147 @@ async function sha256Hex(text) {
 
 let toastTimer = null;
 function toast(message, kind = '') {
-    const el = $('toast'); el.textContent = message; el.className = 'toast' + (kind ? ' ' + kind : ''); el.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 4500);
+    const el = $('toast');
+    el.textContent = message;
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 4500);
 }
 
-function announce(message) { const el = $('srStatus'); el.textContent = ''; setTimeout(() => { el.textContent = message; }, 50); }
+function announce(message) {
+    const el = $('srStatus');
+    el.textContent = '';
+    setTimeout(() => { el.textContent = message; }, 50);
+}
 
-/* Firebase Init */
+/* =====================================================================
+   FIREBASE
+   ===================================================================== */
 if (typeof firebase === 'undefined') {
-    $('fatal').hidden = false; document.querySelectorAll('.role-row').forEach((b) => { b.disabled = true; }); return;
+    $('fatal').hidden = false;
+    document.querySelectorAll('.role-row').forEach((b) => { b.disabled = true; });
+    return;
 }
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database(); const ServerValue = firebase.database.ServerValue;
-let serverOffset = 0; db.ref('.info/serverTimeOffset').on('value', (s) => { serverOffset = s.val() || 0; });
+const db = firebase.database();
+const ServerValue = firebase.database.ServerValue;
+
+let serverOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', (s) => { serverOffset = s.val() || 0; });
 const nowMs = () => Date.now() + serverOffset;
 
 let connTimer = null;
 db.ref('.info/connected').on('value', (s) => {
     clearTimeout(connTimer);
-    if (s.val()) $('connBanner').hidden = true; else connTimer = setTimeout(() => { $('connBanner').hidden = false; }, 2500);
+    if (s.val()) $('connBanner').hidden = true;
+    else connTimer = setTimeout(() => { $('connBanner').hidden = false; }, 2500);
 });
 
-/* State */
+/* =====================================================================
+   STATE
+   ===================================================================== */
 const state = {
-    role: '', bus: 'BUS-01', stopId: '', pendingRole: '', pendingBus: '',
-    routes: { ...SETTINGS.defaultRoutes }, routesFromDb: false, stops: {}, fleet: {},
-    alertKey: '', annAll: [], seenAnn: null, follow: true, firstFix: false, lastKey: undefined, authRole: '',
-    notifiedApproaching: false, activeSosList: [], polyline: null
+    role: '', bus: 'BUS-01', stopId: '',
+    pendingRole: '', pendingBus: '', authRole: '',
+    routes: { ...SETTINGS.defaultRoutes }, routesFromDb: false,
+    stops: {},
+    fleet: {},
+    fleetStates: {},
+    sos: [],            // unresolved student alerts (management and driver only)
+    annAll: [],
+    seenAnn: null,
+    alertKey: '',
+    follow: true,
+    firstFix: false,
+    lastKey: undefined,
+    notifiedApproaching: false,
+    routeReq: 0
 };
-let fleetRef = null; let annRef = null;
 
-/* Audio & Notifications */
-const audio = { ctx: null, nodes: [], playing: false, muted: false, pending: false, endTimer: null };
+/* =====================================================================
+   AUDIO AND NOTIFICATIONS
+   ===================================================================== */
+const audio = { ctx: null, nodes: [], timer: null, pending: false, muted: false };
+
+function getCtx() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audio.ctx) audio.ctx = new AC();
+    return audio.ctx;
+}
+const audioReady = () => !!audio.ctx && audio.ctx.state === 'running';
+
 function unlockAudio() {
-    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    try { if (!audio.ctx) audio.ctx = new AC(); if (audio.ctx.state === 'suspended') { audio.ctx.resume().then(afterUnlock).catch(() => {}); } else { afterUnlock(); } } catch (e) { }
+    const ctx = getCtx();
+    if (!ctx) return;
+    const done = () => {
+        if (audio.pending && !audio.muted) { audio.pending = false; startSiren(); }
+        updateAudioHint();
+    };
+    if (ctx.state === 'suspended') ctx.resume().then(done, () => { }); else done();
 }
-function afterUnlock() { if (audio.pending && !audio.muted) startSiren(); updateAudioHint(); }
 ['click', 'keydown', 'touchend'].forEach((ev) => window.addEventListener(ev, unlockAudio, { passive: true }));
-function audioReady() { return !!audio.ctx && audio.ctx.state === 'running'; }
+
 function updateAudioHint() { $('alertHint').hidden = !(audio.pending && !audio.muted); }
-function startSiren() {
-    if (audio.muted) return; if (!audioReady()) { audio.pending = true; updateAudioHint(); return; }
-    stopSiren(); const ctx = audio.ctx, cycle = 1.2, cycles = 25, t0 = ctx.currentTime;
-    for (let i = 0; i < cycles; i++) {
-        const t = t0 + i * cycle, osc = ctx.createOscillator(), gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(440, t); osc.frequency.linearRampToValueAtTime(880, t + cycle / 2); osc.frequency.linearRampToValueAtTime(440, t + cycle); gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + cycle); osc.start(t); osc.stop(t + cycle); audio.nodes.push(osc);
-    }
-    audio.playing = true; audio.endTimer = setTimeout(() => { audio.playing = false; audio.nodes = []; }, cycles * cycle * 1000); updateAudioHint();
+
+function stopNodes() {
+    audio.nodes.forEach((o) => { try { o.stop(); } catch (e) { } });
+    audio.nodes = [];
 }
-function stopSiren() { clearTimeout(audio.endTimer); audio.nodes.forEach((o) => { try { o.stop(); } catch (e) { } }); audio.nodes = []; audio.playing = false; audio.pending = false; }
+
+function startSiren() {
+    if (audio.muted) return;
+    if (!audioReady()) { audio.pending = true; updateAudioHint(); return; }
+    stopNodes();
+    const ctx = audio.ctx, cyc = SETTINGS.sirenCycleSec, t0 = ctx.currentTime;
+    for (let i = 0; i < SETTINGS.sirenCycles; i++) {
+        const t = t0 + i * cyc;
+        const osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.setValueAtTime(440, t);
+        osc.frequency.linearRampToValueAtTime(880, t + cyc / 2);
+        osc.frequency.linearRampToValueAtTime(440, t + cyc);
+        g.gain.setValueAtTime(SETTINGS.sirenGain, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + cyc);
+        osc.start(t); osc.stop(t + cyc);
+        audio.nodes.push(osc);
+    }
+    clearTimeout(audio.timer);
+    audio.timer = setTimeout(() => { audio.nodes = []; updateAudioHint(); }, SETTINGS.sirenCycles * cyc * 1000);
+    updateAudioHint();
+}
+
+function stopSiren() {
+    clearTimeout(audio.timer);
+    stopNodes();
+    audio.pending = false;
+    updateAudioHint();
+}
+
 function playBeep() {
-    if (!audioReady()) return; try {
-        const ctx = audio.ctx, osc = ctx.createOscillator(), gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2); gain.gain.setValueAtTime(0.2, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25); osc.start(); osc.stop(ctx.currentTime + 0.25);
+    if (!audioReady()) return;
+    try {
+        const ctx = audio.ctx, osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+        g.gain.setValueAtTime(0.2, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.start(); osc.stop(ctx.currentTime + 0.25);
     } catch (e) { }
 }
+
 function notify(title, body) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try { new Notification(title, { body, tag: 'dnr-bus' }); } catch (e) { }
 }
 
-/* Distances */
-function busState(d) {
-    if (!d || d.status !== 'RUNNING' || !isNum(d.lat) || !isNum(d.lng)) return { key: 'offline' };
-    const age = isNum(d.updatedAt) ? Math.max(0, (nowMs() - d.updatedAt) / 1000) : 0;
-    if (age > SETTINGS.lostAfterSec) return { key: 'lost', age }; if (age > SETTINGS.staleAfterSec) return { key: 'weak', age }; return { key: 'live', age };
-}
-const STATE_LABEL = { live: 'Running', weak: 'Signal weak', lost: 'Signal lost', offline: 'Offline' };
-
+/* =====================================================================
+   GEOMETRY AND BUS STATE
+   ===================================================================== */
 function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371, rad = Math.PI / 180;
     const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
@@ -680,600 +790,1330 @@ function haversineKm(lat1, lon1, lat2, lon2) {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function busState(d) {
+    if (!d || d.status !== 'RUNNING' || !isNum(d.lat) || !isNum(d.lng)) return { key: 'offline' };
+    const age = isNum(d.updatedAt) ? Math.max(0, (nowMs() - d.updatedAt) / 1000) : 0;
+    if (age > SETTINGS.lostAfterSec) return { key: 'lost', age };
+    if (age > SETTINGS.staleAfterSec) return { key: 'weak', age };
+    return { key: 'live', age };
+}
+
+function recomputeStates() {
+    const next = {};
+    for (const k of Object.keys(state.fleet)) next[k] = busState(state.fleet[k]);
+    state.fleetStates = next;
+}
+
 function etaFor(d) {
-    const km = haversineKm(d.lat, d.lng, C.lat, C.lng); if (km < 0.2) return { arrived: true, km };
-    const speed = Number(d.speed) > 8 ? Number(d.speed) : SETTINGS.fallbackSpeedKmh;
+    const km = haversineKm(d.lat, d.lng, C.lat, C.lng);
+    if (km < SETTINGS.arrivedRadiusKm) return { arrived: true, km };
+    const speed = Number(d.speed) > SETTINGS.minSpeedForEtaKmh ? Number(d.speed) : SETTINGS.fallbackSpeedKmh;
     const mins = Math.max(1, Math.round((km * SETTINGS.roadFactor / speed) * 60));
     return { km, mins, at: new Date(nowMs() + mins * 60000) };
 }
-const fmtMins = (m) => m >= 120 ? (m / 60).toFixed(1) + ' h' : m + ' min'; const fmtClock = (dt) => dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-function badge(key) { return h('span', { class: 'badge badge-' + key }, STATE_LABEL[key]); }
 
-/* Modals */
+const fmtMins = (m) => m >= 120 ? (m / 60).toFixed(1) + ' h' : m + ' min';
+const fmtClock = (dt) => dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const badge = (key) => h('span', { class: 'badge badge-' + key }, STATE_LABEL[key]);
+const pinEl = (cls, icon, label) => h('div', { class: 'pin-wrap' },
+    h('div', { class: 'pin pin-' + cls, role: 'img', 'aria-label': label }, icon));
+const infoContent = (title, sub) => h('div', { class: 'iw' }, h('strong', {}, title), sub ? h('br') : null, sub ? h('span', {}, sub) : null);
+
+function stopsFor(bus) {
+    return Object.entries(state.stops).filter(([, s]) => bus === 'ALL' || s.routeId === bus);
+}
+
+/* =====================================================================
+   MODALS
+   ===================================================================== */
 let lastFocus = null;
-function openModal(el, focusEl) { lastFocus = document.activeElement; el.classList.add('open'); (focusEl || el.querySelector('button, input, select, textarea'))?.focus(); }
-function closeModal(el) { el.classList.remove('open'); if (lastFocus && document.contains(lastFocus)) lastFocus.focus(); }
+function openModal(el, focusEl) {
+    lastFocus = document.activeElement;
+    el.classList.add('open');
+    (focusEl || el.querySelector('button, input, select, textarea'))?.focus();
+}
+function closeModal(el) {
+    el.classList.remove('open');
+    if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+}
+function cancelModal(m) {
+    if (m.id === 'authModal') finishAuth(false);
+    else closeModal(m);
+}
+document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cancel]');
+    if (!b) return;
+    const m = b.closest('.modal');
+    if (m) cancelModal(m);
+});
+document.querySelectorAll('.modal').forEach((m) => {
+    m.addEventListener('mousedown', (e) => { if (e.target === m) cancelModal(m); });
+});
 document.addEventListener('keydown', (e) => {
-    const open = Array.from(document.querySelectorAll('.modal.open')).pop(); if (!open) return;
-    if (e.key === 'Escape') { open.querySelector('[data-cancel]')?.click(); return; }
+    const open = Array.from(document.querySelectorAll('.modal.open')).pop();
+    if (!open) return;
+    if (e.key === 'Escape') { cancelModal(open); return; }
     if (e.key === 'Tab') {
-        const f = Array.from(open.querySelectorAll('button, input, select, textarea, [href]')).filter((x) => !x.disabled); if (!f.length) return;
+        const f = Array.from(open.querySelectorAll('button, input, select, textarea, [href]')).filter((x) => !x.disabled && !x.closest('[hidden]'));
+        if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
 });
-document.querySelectorAll('.modal').forEach((m) => { m.addEventListener('mousedown', (e) => { if (e.target === m) m.querySelector('[data-cancel]')?.click(); }); });
 
-/* Auth */
+/* =====================================================================
+   AUTH AND SESSION
+   ===================================================================== */
 const SESSION_KEY = 'dnr_bus_session_v2';
 const gateHash = (role) => role === 'Management' ? SETTINGS.managementPasswordHash : role === 'Driver' ? SETTINGS.driverPinHash : '';
-const isGated = (role) => !!gateHash(role); const verifiedKey = (role) => 'dnr_verified_' + role;
+const isGated = (role) => !!gateHash(role);
+const verifiedKey = (role) => 'dnr_verified_' + role;
 const isVerified = (role) => !isGated(role) || sessionStore.get(verifiedKey(role)) === '1';
 
-function saveSession() { const data = JSON.stringify({ role: state.role, bus: state.bus, stopId: state.stopId }); (isGated(state.role) ? sessionStore : localStore).set(SESSION_KEY, data); }
+function saveSession() {
+    const data = JSON.stringify({ role: state.role, bus: state.bus, stopId: state.stopId });
+    (isGated(state.role) ? sessionStore : localStore).set(SESSION_KEY, data);
+}
 function clearSession() { sessionStore.del(SESSION_KEY); localStore.del(SESSION_KEY); }
+
 function loadSession() {
-    localStore.del('saved_role'); localStore.del('saved_bus'); let raw = sessionStore.get(SESSION_KEY) || localStore.get(SESSION_KEY);
+    const raw = sessionStore.get(SESSION_KEY) || localStore.get(SESSION_KEY);
     try {
-        const s = JSON.parse(raw); const roleOk = ['Student', 'Driver', 'Management'].includes(s.role);
+        const s = JSON.parse(raw);
+        const roleOk = ['Student', 'Driver', 'Management'].includes(s.role);
         const busOk = BUS_ID.test(s.bus) || (s.role === 'Management' && s.bus === 'ALL');
         if (roleOk && busOk && isVerified(s.role)) return s;
-    } catch (e) { } return null;
+    } catch (e) { }
+    return null;
 }
 
 let authResolve = null;
 function askSecret(role) {
     return new Promise((resolve) => {
-        authResolve = resolve; state.authRole = role; const mgmt = role === 'Management';
-        $('authTitle').textContent = mgmt ? 'Management password' : 'Driver PIN'; $('authLabel').textContent = mgmt ? 'Password' : 'PIN'; $('authHint').textContent = mgmt ? 'Enter password to open.' : 'Enter PIN to open.'; $('authInput').value = ''; $('authError').textContent = ''; openModal($('authModal'), $('authInput'));
+        authResolve = resolve;
+        state.authRole = role;
+        const mgmt = role === 'Management';
+        $('authTitle').textContent = mgmt ? 'Management password' : 'Driver PIN';
+        $('authLabel').textContent = mgmt ? 'Password' : 'PIN';
+        $('authHint').textContent = mgmt ? 'Enter the password to open this portal.' : 'Enter the PIN to open this portal.';
+        $('authInput').value = '';
+        $('authError').textContent = '';
+        openModal($('authModal'), $('authInput'));
     });
 }
-function finishAuth(ok) { closeModal($('authModal')); const r = authResolve; authResolve = null; if (r) r(ok); }
+function finishAuth(ok) {
+    closeModal($('authModal'));
+    const r = authResolve;
+    authResolve = null;
+    if (r) r(ok);
+}
 $('authForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); const role = state.authRole;
-    if (!(window.crypto && crypto.subtle)) { $('authError').textContent = 'HTTPS required.'; return; }
+    e.preventDefault();
+    const role = state.authRole;
+    if (!(window.crypto && crypto.subtle)) { $('authError').textContent = 'This page must be opened over HTTPS to check the password.'; return; }
     const hash = await sha256Hex($('authInput').value);
-    if (hash === gateHash(role)) { sessionStore.set(verifiedKey(role), '1'); finishAuth(true); } else { $('authError').textContent = "Incorrect."; $('authInput').select(); }
+    if (hash === gateHash(role)) {
+        sessionStore.set(verifiedKey(role), '1');
+        finishAuth(true);
+    } else {
+        $('authError').textContent = 'Incorrect. Try again.';
+        $('authInput').select();
+    }
 });
-$('authModal').querySelector('[data-cancel]').addEventListener('click', () => finishAuth(false));
 
-/* Routes and Stops Sync */
+/* =====================================================================
+   ROUTES, STOPS AND ROLE OPTIONS
+   ===================================================================== */
+function seedDefaults(updates) {
+    if (!state.routesFromDb) {
+        for (const [k, v] of Object.entries(SETTINGS.defaultRoutes)) updates['routes/' + k] = { name: v.name };
+    }
+    return updates;
+}
+
 db.ref('routes').on('value', (snap) => {
     const v = snap.val(), clean = {};
-    if (v && typeof v === 'object') { Object.keys(v).forEach((k) => { if (BUS_ID.test(k) && v[k] && typeof v[k].name === 'string') clean[k] = { name: v[k].name }; }); }
-    state.routesFromDb = Object.keys(clean).length > 0; state.routes = state.routesFromDb ? clean : { ...SETTINGS.defaultRoutes };
+    if (v && typeof v === 'object') {
+        for (const k of Object.keys(v)) {
+            const r = v[k];
+            if (BUS_ID.test(k) && r && typeof r.name === 'string' && r.name.trim()) clean[k] = { name: r.name.trim() };
+        }
+    }
+    state.routesFromDb = Object.keys(clean).length > 0;
+    state.routes = state.routesFromDb ? clean : { ...SETTINGS.defaultRoutes };
     onRoutesChanged();
 }, () => { state.routes = { ...SETTINGS.defaultRoutes }; onRoutesChanged(); });
 
-db.ref('stops').on('value', snap => {
-    state.stops = snap.val() || {};
-    renderStopsList(); updateStopDropdown(); drawPolyline();
-});
-
-db.ref('emergencyAlerts').on('value', snap => {
-    state.activeSosList = [];
-    snap.forEach(child => { const val = child.val(); if (val.status !== 'Resolved') state.activeSosList.push({ id: child.key, ...val }); });
-    renderSosDashboard(); renderSosMapMarkers();
+db.ref('stops').on('value', (snap) => {
+    const v = snap.val() || {}, clean = {};
+    for (const k of Object.keys(v)) {
+        const s = v[k];
+        if (s && typeof s.name === 'string' && typeof s.routeId === 'string' && validLatLng(s.lat, s.lng)) clean[k] = s;
+    }
+    state.stops = clean;
+    renderStopsList();
+    updateStopDropdown();
+    if (!$('appInterface').hidden) { renderLive(); updateRoute(); }
 });
 
 function onRoutesChanged() {
     if ($('busSelectModal').classList.contains('open')) renderRouteList();
-    renderTargetOptions(); if (!$('appInterface').hidden) { renderLive(); renderAnnouncements(false); drawPolyline(); }
+    renderRouteOptions();
+    if (!$('appInterface').hidden) { renderLive(); renderAnnouncements(); updateRoute(); }
 }
 
-function renderTargetOptions() {
-    const sel = $('annTarget'), prev = sel.value || 'ALL'; sel.replaceChildren(h('option', { value: 'ALL' }, 'All routes'));
-    Object.keys(state.routes).sort(compareBus).forEach((k) => { sel.append(h('option', { value: k }, k + ': ' + prettyRoute(state.routes[k].name))); });
-    sel.value = Array.from(sel.options).some((o) => o.value === prev) ? prev : 'ALL';
+function renderRouteOptions() {
+    const sel = $('annTarget'), prevAnn = sel.value || 'ALL';
+    const stopSel = $('stopRouteId'), prevStop = stopSel.value;
+    const keys = Object.keys(state.routes).sort(compareBus);
+
+    sel.replaceChildren(h('option', { value: 'ALL' }, 'All routes'),
+        ...keys.map((k) => h('option', { value: k }, k + ': ' + prettyRoute(state.routes[k].name))));
+    sel.value = keys.includes(prevAnn) || prevAnn === 'ALL' ? prevAnn : 'ALL';
+
+    stopSel.replaceChildren(...keys.map((k) => h('option', { value: k }, k + ': ' + prettyRoute(state.routes[k].name))));
+    if (keys.includes(prevStop)) stopSel.value = prevStop;
 }
 
 function updateStopDropdown() {
-    const sel = $('stopSelectDropdown'), prev = sel.value; sel.innerHTML = '<option value="">None / Direct to College</option>';
-    Object.keys(state.stops).forEach(k => {
-        if (state.pendingBus === 'ALL' || state.stops[k].routeId === state.pendingBus) {
-            sel.innerHTML += `<option value="${k}">${state.stops[k].name} (${state.stops[k].routeId})</option>`;
-        }
-    });
-    if(prev) sel.value = prev;
+    const sel = $('stopSelectDropdown'), prev = sel.value;
+    const opts = stopsFor(state.pendingBus).sort((a, b) => a[1].name.localeCompare(b[1].name));
+    sel.replaceChildren(h('option', { value: '' }, 'None (direct to college)'),
+        ...opts.map(([k, s]) => h('option', { value: k }, s.name + ' (' + s.routeId + ')')));
+    sel.value = opts.some(([k]) => k === prev) ? prev : '';
 }
 
 function routeCard(key, title, sub) {
     const selected = state.pendingBus === key;
     return h('button', {
-        type: 'button', class: 'route-card', role: 'radio', 'aria-checked': selected ? 'true' : 'false',
-        dataset: { bus: key }, onclick: () => { selectRoute(key); updateStopDropdown(); }
-    }, h('span', { class: 'route-badge' }, busBadge(key)), h('span', { class: 'route-info' }, h('strong', {}, title), h('span', {}, sub)));
+        type: 'button', class: 'route-card', role: 'radio',
+        'aria-checked': selected ? 'true' : 'false',
+        dataset: { bus: key },
+        onclick: () => { state.pendingBus = key; renderRouteList(); }
+    }, h('span', { class: 'route-badge' }, busBadge(key)),
+       h('span', { class: 'route-info' }, h('strong', {}, title), h('span', {}, sub)));
 }
+
 function renderRouteList() {
-    const list = $('routeList'); list.replaceChildren();
-    if (state.pendingRole === 'Management') list.append(routeCard('ALL', 'All buses', 'Fleet overview, announcements and bus setup'));
-    Object.keys(state.routes).sort(compareBus).forEach((k) => list.append(routeCard(k, k, prettyRoute(state.routes[k].name))));
+    const list = $('routeList');
+    const cards = [];
+    if (state.pendingRole === 'Management') cards.push(routeCard('ALL', 'All buses', 'Fleet overview, announcements and bus setup'));
+    Object.keys(state.routes).sort(compareBus).forEach((k) => cards.push(routeCard(k, k, prettyRoute(state.routes[k].name))));
+    list.replaceChildren(...cards);
     updateStopDropdown();
 }
-function selectRoute(key) { state.pendingBus = key; document.querySelectorAll('#routeList .route-card').forEach((c) => { c.setAttribute('aria-checked', c.dataset.bus === key ? 'true' : 'false'); }); }
 
-const ROLE_COPY = { Student: ['Which bus do you take?', 'Pick your route.'], Driver: ['Which bus are you driving?', 'Share location.'], Management: ['Which route do you want to open?', 'Fleet overview.'] };
+const ROLE_COPY = {
+    Student: ['Which bus do you take?', 'Pick your route.'],
+    Driver: ['Which bus are you driving?', 'Share your location.'],
+    Management: ['Which route do you want to open?', 'Fleet overview or a single route.']
+};
 
 async function beginPortal(role) {
     if (!isVerified(role)) { const ok = await askSecret(role); if (!ok) return; }
-    state.pendingRole = role; const keys = Object.keys(state.routes);
-    if (role === state.role && (state.bus === 'ALL' ? role === 'Management' : keys.includes(state.bus))) state.pendingBus = state.bus; else state.pendingBus = role === 'Management' ? 'ALL' : (keys.sort(compareBus)[0] || '');
-    $('modalTitle').textContent = ROLE_COPY[role][0]; $('modalSub').textContent = ROLE_COPY[role][1];
-    $('stopSelectWrapper').style.display = role === 'Student' ? 'block' : 'none';
-    renderRouteList(); openModal($('busSelectModal'), $('routeList').querySelector('[aria-checked="true"]'));
+    state.pendingRole = role;
+    const keys = Object.keys(state.routes).sort(compareBus);
+    if (role === state.role && (state.bus === 'ALL' ? role === 'Management' : keys.includes(state.bus))) state.pendingBus = state.bus;
+    else state.pendingBus = role === 'Management' ? 'ALL' : (keys[0] || '');
+    $('modalTitle').textContent = ROLE_COPY[role][0];
+    $('modalSub').textContent = ROLE_COPY[role][1];
+    $('stopSelectWrapper').hidden = role !== 'Student';
+    renderRouteList();
+    openModal($('busSelectModal'), $('routeList').querySelector('[aria-checked="true"]'));
 }
 
 $('confirmRouteBtn').addEventListener('click', () => {
     if (!state.pendingBus) { toast('Pick a route to continue.', 'warn'); return; }
-    state.stopId = $('stopSelectDropdown').value;
-    closeModal($('busSelectModal')); enterApp(state.pendingRole, state.pendingBus);
-    if (state.role === 'Student' && 'Notification' in window) { Notification.requestPermission(); }
+    state.stopId = state.pendingRole === 'Student' ? $('stopSelectDropdown').value : '';
+    state.notifiedApproaching = false;
+    closeModal($('busSelectModal'));
+    enterApp(state.pendingRole, state.pendingBus);
+    if (state.role === 'Student' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => { });
+    }
 });
-document.querySelectorAll('.role-row').forEach((b) => b.addEventListener('click', () => beginPortal(b.dataset.role)));
+
+document.getElementById('roleList').addEventListener('click', (e) => {
+    const b = e.target.closest('.role-row');
+    if (b) beginPortal(b.dataset.role);
+});
 $('changeRouteBtn').addEventListener('click', () => beginPortal(state.role));
 $('exitBtn').addEventListener('click', exitPortal);
 
+/* =====================================================================
+   APP LIFECYCLE
+   ===================================================================== */
 function enterApp(role, bus) {
     if (tracker.active && (role !== 'Driver' || bus !== tracker.bus)) stopTracking({ silent: true });
-    state.role = role; state.bus = bus; saveSession(); showApp();
+    state.role = role;
+    state.bus = bus;
+    saveSession();
+    showApp();
 }
 
 function exitPortal() {
-    stopTracking({ silent: true }); detachFleet(); if (annRef) { annRef.off(); annRef = null; }
-    sessionStore.del(verifiedKey(state.role)); clearSession(); state.role = ''; document.body.dataset.role = '';
-    $('appInterface').hidden = true; $('roleSelectionScreen').hidden = false; window.scrollTo(0, 0);
+    stopTracking({ silent: true });
+    teardownLive();
+    sessionStore.del(verifiedKey(state.role));
+    clearSession();
+    state.role = '';
+    document.body.dataset.role = '';
+    $('appInterface').hidden = true;
+    $('roleSelectionScreen').hidden = false;
+    window.scrollTo(0, 0);
 }
 
 function showApp() {
-    $('roleSelectionScreen').hidden = true; $('appInterface').hidden = false;
-    document.body.dataset.role = state.role; document.body.dataset.mode = state.bus === 'ALL' ? 'all' : 'bus';
-    $('roleChip').textContent = state.role; $('followBtn').style.display = state.bus === 'ALL' ? 'none' : ''; $('fitBtn').textContent = state.bus === 'ALL' ? 'Show all buses' : 'Show whole route';
-    initMap(); attachFleet(); attachAnnouncements(); handleEmergency(true); renderLive(); updateDriverUI();
-    window.scrollTo(0, 0); 
+    $('roleSelectionScreen').hidden = true;
+    $('appInterface').hidden = false;
+    document.body.dataset.role = state.role;
+    document.body.dataset.mode = state.bus === 'ALL' ? 'all' : 'bus';
+    $('roleChip').textContent = state.role;
+    $('fitBtn').textContent = state.bus === 'ALL' ? 'Show all buses' : 'Show whole route';
+    $('followBtn').hidden = state.bus === 'ALL';
+
+    teardownLive();
+    ensureMap();
+    attachFleet();
+    attachSos();
+    attachAnnouncements();
+    renderLive();
+    renderAnnouncements();
+    updateDriverUI();
+    window.scrollTo(0, 0);
+}
+
+function teardownLive() {
+    detachFleet();
+    detachSos();
+    detachAnnouncements();
+    clearBusMarkers();
+    clearSosMarkers();
+    clearRoute();
+    clearYou();
+    stopSiren();
+    state.firstFix = false;
+    state.lastKey = undefined;
+    state.notifiedApproaching = false;
+    state.alertKey = '';
+    setFollow(true);
 }
 
 /* =====================================================================
-   Native Google Maps Implementation (No Leaflet)
+   GOOGLE MAP
    ===================================================================== */
-let map = null, youMarker = null; 
-const markers = new Map(), sosMarkers = new Map();
+let mapPromise = null;
 
-async function initMap() {
-    if (map) return;
+function waitForGoogle() {
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
+        (function poll() {
+            if (window.google && google.maps && google.maps.importLibrary) return resolve();
+            if (Date.now() - start > SETTINGS.mapsWaitMs) return reject(new Error('maps timeout'));
+            setTimeout(poll, 150);
+        })();
+    });
+}
+
+/** Creates the map once. Every caller awaits the same promise. */
+function ensureMap() {
+    if (!mapPromise) mapPromise = createMap();
+    return mapPromise;
+}
+
+async function createMap() {
     try {
-        const { Map } = await google.maps.importLibrary("maps");
-        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-        
-        map = new Map(document.getElementById("map"), {
+        await waitForGoogle();
+        const { Map: GoogleMap, InfoWindow } = await google.maps.importLibrary('maps');
+        const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
+
+        const map = new GoogleMap($('map'), {
             center: { lat: C.lat, lng: C.lng },
             zoom: 12,
-            mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement HTML styling
-            disableDefaultUI: false,
-            mapTypeControl: true
+            mapId: SETTINGS.mapId,
+            mapTypeControl: true,
+            streetViewControl: false
         });
 
-        // Destination College Marker
-        const div = document.createElement('div');
-        div.className = 'pin-wrap';
-        div.innerHTML = '<div class="pin pin-college">🎓</div>';
-        
         const collegeMarker = new AdvancedMarkerElement({
-            map: map,
-            position: { lat: C.lat, lng: C.lng },
-            title: C.name,
-            content: div
+            map, position: { lat: C.lat, lng: C.lng }, title: C.name,
+            content: pinEl('college', '🎓', C.name)
         });
-        
-        const infoWindow = new google.maps.InfoWindow({ content: `<div><strong>${C.name}</strong><br><span>Destination</span></div>` });
-        collegeMarker.addListener('click', () => infoWindow.open({ anchor: collegeMarker, map }));
-        
+        const collegeInfo = new InfoWindow({ content: infoContent(C.name, 'Destination') });
+        collegeMarker.addListener('click', () => collegeInfo.open({ anchor: collegeMarker, map }));
         map.addListener('dragstart', () => setFollow(false));
-    } catch(err) {
-        $('map').replaceChildren(h('p', { class: 'empty', style: 'padding:16px' }, "The map didn't load. Check your internet connection."));
+
+        return { map, libs: { AdvancedMarkerElement, InfoWindow }, you: null };
+    } catch (err) {
+        $('map').replaceChildren(h('p', { class: 'map-error' }, "The map didn't load. Check your internet connection and reload."));
+        return null;
     }
 }
 
-async function drawPolyline() {
-    if (!map) return;
-    if (state.polyline) { state.polyline.setMap(null); state.polyline = null; }
-    
-    const points = []; 
-    
-    // Add live bus location
-    const d = state.fleet[state.bus];
-    if (d && d.status === 'RUNNING' && isNum(d.lat) && isNum(d.lng)) {
-        points.push([d.lng, d.lat]); // OSRM uses [longitude, latitude]
+function setFollow(on) {
+    state.follow = on;
+    const b = $('followBtn');
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.textContent = on ? 'Following bus' : 'Follow bus';
+}
+$('followBtn').addEventListener('click', async () => {
+    setFollow(!state.follow);
+    if (state.follow) {
+        const mc = await ensureMap();
+        const m = busMarkers.get(state.bus);
+        if (mc && m) mc.map.panTo(m.shown);
     }
-    
-    // Add all saved stops for this route
-    Object.values(state.stops).filter(s => s.routeId === state.bus).forEach(s => points.push([s.lng, s.lat]));
-    
-    // End at college
-    points.push([C.lng, C.lat]);
-    
-    if (points.length > 1 && state.bus !== 'ALL') {
-        const coordString = points.map(p => p[0] + ',' + p[1]).join(';');
-        
-        try {
-            // Fetch road-snapped route from OSRM
-            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson`);
-            const data = await res.json();
-            
-            if (data.routes && data.routes[0]) {
-                const routeCoords = data.routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
-                state.polyline = new google.maps.Polyline({
-                    path: routeCoords,
-                    strokeColor: '#1d4ed8',
-                    strokeWeight: 4,
-                    strokeOpacity: 0.8,
-                    map: map
-                });
-            }
-        } catch (err) {
-            // Fallback straight line if routing server fails
-            const fallbackCoords = points.map(p => ({ lat: p[1], lng: p[0] }));
-            const lineSymbol = { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4 };
-            state.polyline = new google.maps.Polyline({
-                path: fallbackCoords,
-                strokeOpacity: 0,
-                icons: [{ icon: lineSymbol, offset: '0', repeat: '20px' }],
-                strokeColor: '#1d4ed8',
-                map: map
-            });
+});
+
+function viewPoints() {
+    const pts = [{ lat: C.lat, lng: C.lng }];
+    busMarkers.forEach((m) => pts.push(m.shown));
+    if (state.bus !== 'ALL') stopsFor(state.bus).forEach(([, s]) => pts.push({ lat: s.lat, lng: s.lng }));
+    return pts;
+}
+
+function fitTo(mc, pts) {
+    if (pts.length === 1) { mc.map.setCenter(pts[0]); mc.map.setZoom(14); return; }
+    const b = new google.maps.LatLngBounds();
+    pts.forEach((p) => b.extend(p));
+    mc.map.fitBounds(b);
+}
+
+$('fitBtn').addEventListener('click', async () => {
+    const mc = await ensureMap();
+    if (!mc) return;
+    fitTo(mc, viewPoints());
+    if (state.bus !== 'ALL') setFollow(false);
+});
+
+$('locateBtn').addEventListener('click', async () => {
+    const mc = await ensureMap();
+    if (!mc) return;
+    if (!navigator.geolocation) { toast("This device can't share its location with the page.", 'warn'); return; }
+    navigator.geolocation.getCurrentPosition((p) => {
+        const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
+        if (!mc.you) {
+            const { AdvancedMarkerElement, InfoWindow } = mc.libs;
+            const marker = new AdvancedMarkerElement({ map: mc.map, position: pos, title: 'You are here', content: h('div', { class: 'you-dot' }) });
+            const info = new InfoWindow({ content: infoContent('You are here') });
+            marker.addListener('click', () => info.open({ anchor: marker, map: mc.map }));
+            mc.you = { marker };
         }
-    }
+        mc.you.marker.position = pos;
+        if (state.bus !== 'ALL') setFollow(false);
+        fitTo(mc, [...viewPoints(), pos]);
+    }, () => toast("Couldn't get your location.", 'warn'), { enableHighAccuracy: true, timeout: 10000 });
+});
+
+function clearYou() {
+    if (!mapPromise) return;
+    mapPromise.then((mc) => {
+        if (mc && mc.you) { mc.you.marker.map = null; mc.you = null; }
+    });
 }
 
-function setFollow(on) { state.follow = on; const b = $('followBtn'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Following bus' : 'Follow bus'; }
+/* ---- Bus markers ---- */
+const busMarkers = new Map();
 
 function animateMarker(m, to) {
     cancelAnimationFrame(m.raf);
-    const from = m.marker.position;
-    const start = performance.now(), dur = 1500;
-    const dLat = to.lat - from.lat, dLng = to.lng - from.lng;
-    
+    const from = m.shown || to, start = performance.now(), dur = 1500;
     const step = (now) => {
         const t = Math.min(1, (now - start) / dur);
-        m.marker.position = { lat: from.lat + dLat * t, lng: from.lng + dLng * t };
+        m.shown = { lat: from.lat + (to.lat - from.lat) * t, lng: from.lng + (to.lng - from.lng) * t };
+        m.marker.position = m.shown;
         if (t < 1) m.raf = requestAnimationFrame(step);
     };
     m.raf = requestAnimationFrame(step);
 }
 
-async function syncMarkers(dataChanged) {
-    if (!map) return;
+async function syncBusMarkers(fleetChanged) {
+    const mc = await ensureMap();
+    if (!mc) return;
+    const { AdvancedMarkerElement, InfoWindow } = mc.libs;
     const seen = new Set();
-    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-    const { InfoWindow } = await google.maps.importLibrary("maps");
 
     for (const key of Object.keys(state.fleet)) {
-        const d = state.fleet[key], s = busState(d);
-        if (s.key === 'offline') continue;
+        const s = state.fleetStates[key];
+        if (!s || s.key === 'offline') continue;
+        const d = state.fleet[key];
         seen.add(key);
-        
-        const cls = s.key === 'live' ? 'live' : s.key === 'weak' ? 'weak' : 'lost';
-        const pos = { lat: d.lat, lng: d.lng };
-        
-        let m = markers.get(key);
+        const target = { lat: d.lat, lng: d.lng };
+
+        let m = busMarkers.get(key);
         if (!m) {
-            const div = document.createElement('div');
-            div.className = 'pin-wrap';
-            div.innerHTML = `<div class="pin pin-${cls}">🚌</div>`;
-            
-            const marker = new AdvancedMarkerElement({ map: map, position: pos, title: key, content: div });
-            const infoWindow = new InfoWindow();
-            marker.addListener('click', () => infoWindow.open({ anchor: marker, map }));
-            
-            m = { marker, cls, pos, infoWindow, raf: 0 };
-            markers.set(key, m);
+            const marker = new AdvancedMarkerElement({ map: mc.map, position: target, title: key, content: pinEl(s.key, '🚌', 'Bus ' + key) });
+            const info = new InfoWindow();
+            const entry = { marker, info, cls: s.key, shown: target, raf: 0, open: false };
+            marker.addListener('click', () => { entry.open = true; info.open({ anchor: marker, map: mc.map }); });
+            info.addListener('closeclick', () => { entry.open = false; });
+            busMarkers.set(key, entry);
+            m = entry;
         } else {
-            if (m.cls !== cls) {
-                m.marker.content.innerHTML = `<div class="pin pin-${cls}">🚌</div>`;
-                m.cls = cls;
-            }
-            if (dataChanged && (m.pos.lat !== pos.lat || m.pos.lng !== pos.lng)) {
-                animateMarker(m, pos);
-                m.pos = pos;
-            }
+            if (m.cls !== s.key) { m.marker.content.firstChild.className = 'pin pin-' + s.key; m.cls = s.key; }
+            if (fleetChanged) animateMarker(m, target);
         }
-        
-        if (dataChanged || m.infoWindow.getMap()) {
+
+        if (m.open) {
             const route = state.routes[key] ? prettyRoute(state.routes[key].name) : '';
             const when = isNum(d.updatedAt) ? 'Updated ' + ago(nowMs() - d.updatedAt) : 'Live location';
-            m.infoWindow.setContent(`<div><strong>${key}${route ? ': ' + route : ''}</strong><br><span>${STATE_LABEL[s.key]}. ${when}</span></div>`);
+            m.info.setContent(infoContent(key + (route ? ': ' + route : ''), STATE_LABEL[s.key] + '. ' + when));
         }
     }
-    
-    for (const [key, m] of markers.entries()) {
-        if (!seen.has(key)) {
-            m.marker.map = null;
-            cancelAnimationFrame(m.raf);
-            markers.delete(key);
-        }
+
+    for (const [key, m] of busMarkers) {
+        if (!seen.has(key)) { cancelAnimationFrame(m.raf); m.marker.map = null; busMarkers.delete(key); }
     }
-    
-    if (dataChanged) moveCamera();
+
+    if (fleetChanged) moveCamera(mc);
 }
 
-async function renderSosMapMarkers() {
-    if (!map) return;
-    const seen = new Set();
-    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-    const { InfoWindow } = await google.maps.importLibrary("maps");
-
-    for (const a of state.activeSosList) {
-        if (state.role === 'Driver' && a.route !== state.bus) continue;
-        seen.add(a.id);
-        let m = sosMarkers.get(a.id);
-        if (!m) {
-            const div = document.createElement('div');
-            div.className = 'pin-wrap';
-            div.innerHTML = `<div class="pin pin-sos">🚨</div>`;
-            
-            const marker = new AdvancedMarkerElement({ map: map, position: { lat: a.lat, lng: a.lng }, content: div });
-            const infoWindow = new InfoWindow({ content: `<div><strong>SOS Alert: ${a.studentId}</strong><br><span>Route: ${a.route}</span></div>` });
-            marker.addListener('click', () => infoWindow.open({ anchor: marker, map }));
-            
-            m = { marker, infoWindow };
-            sosMarkers.set(a.id, m);
-        }
-    }
-    
-    for (const [k, m] of sosMarkers.entries()) {
-        if (!seen.has(k)) { m.marker.map = null; sosMarkers.delete(k); }
-    }
+function clearBusMarkers() {
+    busMarkers.forEach((m) => { cancelAnimationFrame(m.raf); m.marker.map = null; });
+    busMarkers.clear();
+    state.fleet = {};
+    state.fleetStates = {};
 }
 
-function pointsInView() {
-    const pts = [{ lat: C.lat, lng: C.lng }];
-    markers.forEach((m) => pts.push(m.pos));
-    return pts;
-}
-
-function moveCamera() {
-    if (!map) return;
-    if (!markers.size) { state.firstFix = false; return; }
+function moveCamera(mc) {
+    if (!busMarkers.size) { state.firstFix = false; return; }
     if (!state.firstFix) {
         state.firstFix = true;
-        const bounds = new google.maps.LatLngBounds();
-        pointsInView().forEach(p => bounds.extend(p));
-        map.fitBounds(bounds);
+        fitTo(mc, viewPoints());
         return;
     }
     if (state.bus !== 'ALL' && state.follow) {
-        const m = markers.get(state.bus);
-        if (m) map.panTo(m.pos);
+        const m = busMarkers.get(state.bus);
+        if (m) mc.map.panTo(m.shown);
     }
 }
 
-$('followBtn').addEventListener('click', () => { setFollow(!state.follow); if (state.follow) { const m = markers.get(state.bus); if (m && map) map.panTo(m.pos); } });
+/* ---- Student alert markers (management and driver only, only when a location was sent) ---- */
+const sosMarkers = new Map();
 
-$('fitBtn').addEventListener('click', () => { 
-    if (!map) return; 
-    const bounds = new google.maps.LatLngBounds();
-    pointsInView().forEach(p => bounds.extend(p));
-    map.fitBounds(bounds);
-    if (state.bus !== 'ALL') setFollow(false); 
-});
+function visibleSos() {
+    return state.sos.filter((a) => state.role === 'Management' || a.route === state.bus);
+}
 
-$('locateBtn').addEventListener('click', async () => {
-    if (!map) return; 
-    if (!navigator.geolocation) { toast("This device can't share its location with the page.", 'warn'); return; }
-    
-    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-    const { InfoWindow } = await google.maps.importLibrary("maps");
-    
-    navigator.geolocation.getCurrentPosition((p) => {
-        const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
-        if (youMarker) {
-            youMarker.marker.position = pos;
-        } else {
-            const div = document.createElement('div');
-            div.style.cssText = 'width:16px;height:16px;background:#1d4ed8;border:3px solid #fff;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.4);';
-            const marker = new AdvancedMarkerElement({ map: map, position: pos, content: div });
-            const infoWindow = new InfoWindow({ content: '<div><strong>You are here</strong></div>' });
-            marker.addListener('click', () => infoWindow.open({ anchor: marker, map }));
-            youMarker = { marker, infoWindow };
-        }
-        if (state.bus !== 'ALL') setFollow(false);
-        
-        const bounds = new google.maps.LatLngBounds();
-        pointsInView().forEach(pt => bounds.extend(pt));
-        bounds.extend(pos);
-        map.fitBounds(bounds);
-    }, () => toast("Couldn't get your location.", 'warn'), { enableHighAccuracy: true, timeout: 10000 });
-});
+async function syncSosMarkers() {
+    const mc = await ensureMap();
+    if (!mc) return;
+    const { AdvancedMarkerElement, InfoWindow } = mc.libs;
+    const seen = new Set();
+    for (const a of visibleSos()) {
+        if (!a.hasLocation) continue;
+        seen.add(a.id);
+        if (sosMarkers.has(a.id)) continue;
+        const title = a.type === 'global' ? 'Global alert: ' + a.studentId : 'SOS: ' + a.studentId;
+        const marker = new AdvancedMarkerElement({ map: mc.map, position: { lat: a.lat, lng: a.lng }, title, content: pinEl('sos', a.type === 'global' ? '📣' : '🚨', title) });
+        const info = new InfoWindow({ content: infoContent(title, 'Route: ' + a.route) });
+        marker.addListener('click', () => info.open({ anchor: marker, map: mc.map }));
+        sosMarkers.set(a.id, { marker, info });
+    }
+    for (const [id, m] of sosMarkers) {
+        if (!seen.has(id)) { m.marker.map = null; sosMarkers.delete(id); }
+    }
+}
 
-/* Fleet & Live Tracking */
-function resetBusView() { markers.forEach((m) => { cancelAnimationFrame(m.raf); if (map) m.marker.map = null; }); markers.clear(); state.fleet = {}; state.firstFix = false; state.lastKey = undefined; setFollow(true); }
-function detachFleet() { if (fleetRef) { fleetRef.off(); fleetRef = null; } state.alertKey = ''; stopSiren(); audio.muted = false; $('alertBanner').hidden = true; }
+function clearSosMarkers() {
+    sosMarkers.forEach((m) => { m.marker.map = null; });
+    sosMarkers.clear();
+}
+
+/* ---- Road route (cached; refetched only when the stops or the bus's coarse position change) ---- */
+let routeLine = null;
+let routeKey = '';
+
+function clearRoute() {
+    if (routeLine) routeLine.setMap(null);
+    routeLine = null;
+    routeKey = '';
+}
+
+async function fetchRoad(points) {
+    const coords = points.map((p) => p.lng + ',' + p.lat).join(';');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), SETTINGS.osrmTimeoutMs);
+    try {
+        const res = await fetch(SETTINGS.osrmBase + coords + '?overview=full&geometries=geojson', { signal: ctrl.signal });
+        if (!res.ok) throw new Error('routing ' + res.status);
+        const data = await res.json();
+        const r = data.routes && data.routes[0];
+        if (!r) throw new Error('no route');
+        return { path: r.geometry.coordinates.map((c) => ({ lat: c[1], lng: c[0] })), road: true };
+    } catch (e) {
+        return { path: points, road: false };
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function updateRoute() {
+    if (state.bus === 'ALL' || $('appInterface').hidden) { clearRoute(); return; }
+    const mc = await ensureMap();
+    if (!mc) return;
+
+    const d = state.fleet[state.bus], s = state.fleetStates[state.bus];
+    const start = d && s && s.key !== 'offline' ? { lat: d.lat, lng: d.lng } : null;
+    const stops = stopsFor(state.bus).map(([, st]) => ({ lat: st.lat, lng: st.lng }));
+    const grid = SETTINGS.routeRefetchGridDeg;
+    const bucket = start ? (Math.round(start.lat / grid) + ',' + Math.round(start.lng / grid)) : '-';
+    const key = state.bus + '|' + bucket + '|' + stops.map((p) => p.lat + ',' + p.lng).join(';');
+    if (key === routeKey) return;
+
+    const points = [...(start ? [start] : []), ...stops, { lat: C.lat, lng: C.lng }];
+    const req = ++state.routeReq;
+    routeKey = key;
+    if (points.length < 2) { clearRoute(); routeKey = key; return; }
+
+    const { path, road } = await fetchRoad(points);
+    if (req !== state.routeReq || $('appInterface').hidden) return;
+
+    if (routeLine) routeLine.setMap(null);
+    routeLine = new google.maps.Polyline(road
+        ? { path, strokeColor: '#1d4ed8', strokeWeight: 4, strokeOpacity: 0.8, map: mc.map }
+        : { path, strokeOpacity: 0, strokeColor: '#1d4ed8', map: mc.map,
+            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4 }, offset: '0', repeat: '20px' }] });
+}
+
+/* =====================================================================
+   FLEET AND LIVE VIEW
+   ===================================================================== */
+let fleetRef = null;
+
+function detachFleet() {
+    if (fleetRef) { fleetRef.off(); fleetRef = null; }
+}
 
 function attachFleet() {
-    detachFleet(); resetBusView(); const all = state.bus === 'ALL';
+    detachFleet();
+    clearBusMarkers();
+    state.firstFix = false;
+    const all = state.bus === 'ALL';
     fleetRef = db.ref(all ? 'buses' : 'buses/' + state.bus);
     fleetRef.on('value', (snap) => {
-        const v = snap.val(); state.fleet = all ? (v || {}) : { [state.bus]: v };
-        handleEmergency(false); syncMarkers(true); renderLive(); checkApproach();
+        const v = snap.val();
+        state.fleet = all ? (v || {}) : (v ? { [state.bus]: v } : {});
+        recomputeStates();
+        handleEmergency(false);
+        syncBusMarkers(true);
+        renderLive();
+        checkApproach();
     }, () => toast("Couldn't load live bus data.", 'error'));
 }
 
 function renderLive() {
-    renderFleetList(); if (state.bus === 'ALL') return;
-    const d = state.fleet[state.bus], s = busState(d); const route = state.routes[state.bus];
-    $('boardNum').textContent = busBadge(state.bus); $('boardRoute').textContent = route ? prettyRoute(route.name) : state.bus; $('hero').dataset.state = s.key; $('factStatus').replaceChildren(badge(s.key));
+    renderFleetList();
+    if (state.bus === 'ALL') return;
+
+    const d = state.fleet[state.bus];
+    const s = state.fleetStates[state.bus] || { key: 'offline' };
+    const route = state.routes[state.bus];
+
+    $('boardNum').textContent = busBadge(state.bus);
+    $('boardRoute').textContent = route ? prettyRoute(route.name) : state.bus;
+    $('hero').dataset.state = s.key;
+    $('factStatus').replaceChildren(badge(s.key));
 
     let line, gps, speed = '0 km/h', eta = '--', etaSub = 'Arrival time shows when the bus is running', dist = '--';
-    if (s.key === 'offline') { line = 'Not running right now'; gps = 'Offline'; } else {
+    if (s.key === 'offline') {
+        line = 'Not running right now';
+        gps = 'Offline';
+    } else {
         const since = isNum(d.updatedAt) ? ago(nowMs() - d.updatedAt) : 'just now';
-        speed = (Number(d.speed) || 0) + ' km/h'; dist = haversineKm(d.lat, d.lng, C.lat, C.lng).toFixed(1) + ' km';
-        if (s.key === 'live') { line = 'Live now. Updated ' + since; gps = 'Live'; } else if (s.key === 'weak') { line = 'Signal weak. Last update ' + since; gps = 'Weak, ' + since; } else { line = 'Signal lost. Last seen ' + since; gps = 'Lost, ' + since; }
-        if (s.key !== 'lost') { const e = etaFor(d); if (e.arrived) { eta = 'Arrived'; etaSub = 'At ' + C.name; } else { eta = fmtMins(e.mins); etaSub = 'About ' + e.km.toFixed(1) + ' km away, around ' + fmtClock(e.at); } } else { etaSub = 'No arrival time while the signal is lost'; }
-    }
-    $('boardLine').textContent = line; $('factSpeed').textContent = speed; $('factGps').textContent = gps; $('factDist').textContent = dist; $('busEta').textContent = eta; $('busEtaSub').textContent = etaSub;
-    
-    if (state.role === 'Student') {
-        if (state.stopId && state.stops[state.stopId]) {
-            const stop = state.stops[state.stopId]; $('factStop').textContent = stop.name;
-            if (s.key !== 'offline') $('factStopDist').textContent = haversineKm(d.lat, d.lng, stop.lat, stop.lng).toFixed(2) + ' km'; else $('factStopDist').textContent = '--';
-        } else { $('factStop').textContent = 'Not selected'; $('factStopDist').textContent = '--'; }
+        speed = Math.round(Number(d.speed) || 0) + ' km/h';
+        dist = haversineKm(d.lat, d.lng, C.lat, C.lng).toFixed(1) + ' km';
+        if (s.key === 'live') { line = 'Live now. Updated ' + since; gps = 'Live'; }
+        else if (s.key === 'weak') { line = 'Signal weak. Last update ' + since; gps = 'Weak, ' + since; }
+        else { line = 'Signal lost. Last seen ' + since; gps = 'Lost, ' + since; }
+
+        if (s.key !== 'lost') {
+            const e = etaFor(d);
+            if (e.arrived) { eta = 'Arrived'; etaSub = 'At ' + C.name; }
+            else { eta = fmtMins(e.mins); etaSub = 'About ' + e.km.toFixed(1) + ' km away, around ' + fmtClock(e.at); }
+        } else {
+            etaSub = 'No arrival time while the signal is lost';
+        }
     }
 
-    if (state.lastKey !== s.key) { if (state.lastKey !== undefined) announce(state.bus + ': ' + STATE_LABEL[s.key]); state.lastKey = s.key; }
-    
-    drawPolyline();
+    $('boardLine').textContent = line;
+    $('factSpeed').textContent = speed;
+    $('factGps').textContent = gps;
+    $('factDist').textContent = dist;
+    $('busEta').textContent = eta;
+    $('busEtaSub').textContent = etaSub;
+
+    if (state.role === 'Student') {
+        const stop = state.stopId ? state.stops[state.stopId] : null;
+        if (stop) {
+            $('factStop').textContent = stop.name;
+            $('factStopDist').textContent = s.key !== 'offline'
+                ? haversineKm(d.lat, d.lng, stop.lat, stop.lng).toFixed(2) + ' km' : '--';
+        } else {
+            $('factStop').textContent = 'Not selected';
+            $('factStopDist').textContent = '--';
+        }
+    }
+
+    if (state.lastKey !== s.key) {
+        if (state.lastKey !== undefined) announce(state.bus + ': ' + STATE_LABEL[s.key]);
+        state.lastKey = s.key;
+    }
+
+    updateRoute();
 }
+
+function renderFleetList() {
+    const list = $('fleetList');
+    if (state.bus !== 'ALL') return;
+    const keys = Object.keys(state.routes).sort(compareBus);
+    const sig = keys.join(',');
+
+    if (list.dataset.sig !== sig) {
+        list.replaceChildren(...keys.map((k) => h('div', { class: 'fleet-row', dataset: { bus: k } },
+            h('div', { class: 'fleet-badge' }, busBadge(k)),
+            h('div', { class: 'fleet-main' },
+                h('strong', {}, k),
+                h('div', { class: 'muted fleet-route' }),
+                h('div', { class: 'fleet-meta' }, h('span', { class: 'fleet-status' }), h('span', { class: 'muted fleet-detail' }))),
+            h('div', { class: 'fleet-actions' },
+                h('button', { type: 'button', class: 'btn btn-quiet btn-small', dataset: { action: 'open-bus', id: k } }, 'Open ' + k),
+                h('button', { type: 'button', class: 'btn btn-ghost-danger btn-small', dataset: { action: 'remove-route', id: k } }, 'Remove')))));
+        list.dataset.sig = sig;
+    }
+
+    $('fleetEmpty').hidden = keys.length > 0;
+
+    for (const row of list.querySelectorAll('.fleet-row')) {
+        const k = row.dataset.bus;
+        const d = state.fleet[k];
+        const s = state.fleetStates[k] || { key: 'offline' };
+        row.querySelector('.fleet-route').textContent = prettyRoute(state.routes[k] && state.routes[k].name);
+        row.querySelector('.fleet-status').replaceChildren(badge(s.key));
+        const detail = row.querySelector('.fleet-detail');
+        if (s.key === 'offline') {
+            detail.textContent = d && d.emergency ? 'Global alert active' : 'Not running';
+            continue;
+        }
+        const parts = [Math.round(Number(d.speed) || 0) + ' km/h'];
+        if (s.key !== 'lost') { const e = etaFor(d); parts.push(e.arrived ? 'arrived' : 'arrives in ' + fmtMins(e.mins)); }
+        if (isNum(d.updatedAt)) parts.push('updated ' + ago(nowMs() - d.updatedAt));
+        detail.textContent = parts.join(', ');
+    }
+}
+
+$('fleetList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-action]');
+    if (!b) return;
+    if (b.dataset.action === 'open-bus') enterApp('Management', b.dataset.id);
+    if (b.dataset.action === 'remove-route') removeRoute(b.dataset.id);
+});
 
 function checkApproach() {
-    if (state.role !== 'Student' || !state.stopId || !state.fleet[state.bus]) return;
-    const d = state.fleet[state.bus]; if (d.status !== 'RUNNING') return;
-    const stop = state.stops[state.stopId]; if (!stop) return;
-
+    if (state.role !== 'Student' || !state.stopId) return;
+    const d = state.fleet[state.bus], s = state.fleetStates[state.bus], stop = state.stops[state.stopId];
+    if (!d || !s || s.key !== 'live' || !stop) return;
     const dist = haversineKm(d.lat, d.lng, stop.lat, stop.lng);
     if (dist <= SETTINGS.approachRadiusKm && !state.notifiedApproaching) {
-        state.notifiedApproaching = true; notify("Bus Approaching!", `Your bus is approximately ${dist.toFixed(1)} km away from ${stop.name}. Please get ready.`);
-    } else if (dist > SETTINGS.approachRadiusKm + 0.5) { state.notifiedApproaching = false; }
+        state.notifiedApproaching = true;
+        const msg = `Your bus is about ${dist.toFixed(1)} km from ${stop.name}. Please get ready.`;
+        notify('Bus approaching', msg);
+        toast(msg, 'warn');
+        playBeep();
+    } else if (dist > SETTINGS.approachRadiusKm + SETTINGS.approachHysteresisKm) {
+        state.notifiedApproaching = false;
+    }
 }
 
-const fleetRows = new Map();
-function buildFleetRow(key) {
-    const name = h('div', { class: 'muted' }), status = h('span', {}), meta = h('span', { class: 'muted' });
-    const el = h('div', { class: 'fleet-row' }, h('div', { class: 'fleet-badge' }, busBadge(key)), h('div', { class: 'fleet-main' }, h('strong', {}, key), name, h('div', { class: 'fleet-meta' }, status, meta)), h('div', { class: 'fleet-actions' }, h('button', { type: 'button', class: 'btn btn-quiet btn-small', onclick: () => enterApp('Management', key) }, 'Open ' + key), h('button', { type: 'button', class: 'btn btn-ghost-danger btn-small', onclick: () => removeRoute(key) }, 'Remove')));
-    return { el, name, status, meta };
-}
-function renderFleetList() {
-    if (state.bus !== 'ALL') return;
-    const list = $('fleetList'), keys = Object.keys(state.routes).sort(compareBus), sig = keys.join(',');
-    if (list.dataset.sig !== sig) { list.replaceChildren(); fleetRows.clear(); keys.forEach((k) => { const r = buildFleetRow(k); fleetRows.set(k, r); list.append(r.el); }); list.dataset.sig = sig; }
-    $('fleetEmpty').hidden = keys.length > 0;
-    keys.forEach((k) => {
-        const row = fleetRows.get(k), d = state.fleet[k], s = busState(d);
-        row.name.textContent = prettyRoute(state.routes[k].name); row.status.replaceChildren(badge(s.key));
-        if (s.key === 'offline') { row.meta.textContent = d && d.emergency ? 'Emergency active' : 'Not running'; return; }
-        const parts = [(Number(d.speed) || 0) + ' km/h']; if (s.key !== 'lost') { const e = etaFor(d); parts.push(e.arrived ? 'arrived' : 'arrives in ' + fmtMins(e.mins)); }
-        if (isNum(d.updatedAt)) parts.push('updated ' + ago(nowMs() - d.updatedAt)); row.meta.textContent = parts.join(', ');
-    });
-}
-
-/* Feature 2: Stop Management */
-$('addStopForm').addEventListener('submit', e => {
-    e.preventDefault();
-    db.ref('stops').push({ routeId: $('stopRouteId').value, name: $('stopName').value, lat: parseFloat($('stopLat').value), lng: parseFloat($('stopLng').value) })
-    .then(() => { toast('Stop Added'); e.target.reset(); });
-});
+/* =====================================================================
+   MANAGEMENT: STOPS, BUSES, ANNOUNCEMENTS
+   ===================================================================== */
 function renderStopsList() {
-    if(state.role !== 'Management') return; const list = $('mgmtStopList'); list.innerHTML = '';
-    Object.keys(state.stops).forEach(k => {
-        const s = state.stops[k];
-        list.innerHTML += `<div class="list-row"><div class="list-badge" style="font-size:20px;">🚏</div><div><strong>${s.name}</strong><div class="muted">${s.routeId} | ${s.lat}, ${s.lng}</div></div><button class="btn btn-ghost-danger btn-small" onclick="deleteStop('${k}')">Del</button></div>`;
-    });
+    if (state.role !== 'Management') return;
+    const list = $('mgmtStopList');
+    const rows = Object.entries(state.stops)
+        .sort((a, b) => a[1].routeId.localeCompare(b[1].routeId) || a[1].name.localeCompare(b[1].name))
+        .map(([k, s]) => h('div', { class: 'list-row' },
+            h('div', { class: 'list-badge', 'aria-hidden': 'true' }, '🚏'),
+            h('div', {}, h('strong', {}, s.name), h('div', { class: 'muted' }, s.routeId + ' · ' + s.lat.toFixed(5) + ', ' + s.lng.toFixed(5))),
+            h('button', { type: 'button', class: 'btn btn-ghost-danger btn-small', dataset: { action: 'del-stop', id: k } }, 'Delete')));
+    list.replaceChildren(...(rows.length ? rows : [h('p', { class: 'empty' }, 'No stops yet.')]));
 }
-window.deleteStop = k => db.ref('stops/' + k).remove();
 
-/* Feature 1: Student SOS Emergency */
-$('openSosBtn').addEventListener('click', () => openModal($('sosModal')));
-$('sosForm').addEventListener('submit', e => {
-    e.preventDefault(); if (!navigator.geolocation) { toast('Geolocation not supported.', 'error'); return; }
-    toast('Acquiring secure GPS location...', 'warn');
-    navigator.geolocation.getCurrentPosition(
-        pos => {
-            db.ref('emergencyAlerts').push({ studentId: $('sosStudentId').value, route: state.bus, lat: pos.coords.latitude, lng: pos.coords.longitude, status: 'Pending', timestamp: ServerValue.TIMESTAMP })
-            .then(() => { closeModal($('sosModal')); toast('SOS Alert sent. Help is on the way.', 'error'); });
-        }, err => { toast('GPS Permission denied. Cannot send SOS.', 'error'); }, { enableHighAccuracy: true, timeout: 10000 }
-    );
+$('mgmtStopList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-action="del-stop"]');
+    if (!b) return;
+    if (!confirm('Delete this stop?')) return;
+    db.ref('stops/' + b.dataset.id).remove()
+        .then(() => toast('Stop deleted.'))
+        .catch(() => toast("Couldn't delete the stop.", 'error'));
 });
+
+$('addStopForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const routeId = $('stopRouteId').value;
+    const name = $('stopName').value.trim().slice(0, 80);
+    const lat = parseFloat($('stopLat').value), lng = parseFloat($('stopLng').value);
+    if (!state.routes[routeId]) { toast('Pick a route.', 'warn'); return; }
+    if (!name) { toast('Enter a stop name.', 'warn'); return; }
+    if (!validLatLng(lat, lng)) { toast('Enter a valid latitude and longitude.', 'warn'); return; }
+    try {
+        await db.ref('stops').push({ routeId, name, lat, lng });
+        toast('Stop added.');
+        $('stopName').value = ''; $('stopLat').value = ''; $('stopLng').value = '';
+    } catch (err) {
+        toast("Couldn't add the stop.", 'error');
+    }
+});
+
+$('addBusForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = $('newBusId').value.trim().toUpperCase(), name = $('newBusRoute').value.trim();
+    if (!BUS_ID.test(id)) { toast('Use 2 to 12 letters, numbers or dashes.', 'warn'); return; }
+    if (name.length < 3) { toast('Enter the route name.', 'warn'); return; }
+    const exists = !!state.routes[id];
+    if (exists && !confirm(id + ' already exists. Update its route name?')) return;
+
+    const updates = seedDefaults({});
+    updates['routes/' + id] = { name };
+    if (!exists) updates['buses/' + id] = { status: 'OFFLINE', speed: 0 };
+    try {
+        await db.ref().update(updates);
+        toast(exists ? id + ' updated.' : id + ' registered.');
+        e.target.reset();
+    } catch (err) {
+        toast("Couldn't save the bus.", 'error');
+    }
+});
+
+async function removeRoute(id) {
+    if (!confirm('Remove ' + id + ', its stops and its live data?')) return;
+    const updates = seedDefaults({});
+    updates['routes/' + id] = null;
+    updates['buses/' + id] = null;
+    Object.entries(state.stops).forEach(([k, s]) => { if (s.routeId === id) updates['stops/' + k] = null; });
+    try {
+        await db.ref().update(updates);
+        toast(id + ' removed.');
+    } catch (err) {
+        toast("Couldn't remove the bus.", 'error');
+    }
+}
+
+/* ---- Announcements ---- */
+let annRef = null;
+
+function detachAnnouncements() {
+    if (annRef) { annRef.off(); annRef = null; }
+}
+
+function attachAnnouncements() {
+    detachAnnouncements();
+    state.seenAnn = null;
+    state.annAll = [];
+    annRef = db.ref('announcements').limitToLast(SETTINGS.announcementLimit);
+    annRef.on('value', (snap) => {
+        const items = [];
+        snap.forEach((child) => {
+            const v = child.val();
+            if (v && typeof v === 'object') items.push({ ...v, key: child.key });
+        });
+        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        state.annAll = items;
+        onAnnouncementsSnapshot();
+    }, () => { $('announceList').replaceChildren(h('p', { class: 'empty' }, "Couldn't load announcements.")); });
+}
+
+const relevant = (a) => state.bus === 'ALL' || a.targetBus === 'ALL' || a.targetBus === state.bus;
+
+function onAnnouncementsSnapshot() {
+    if (state.seenAnn === null) {
+        state.seenAnn = new Set(state.annAll.map((a) => a.key));
+    } else {
+        const fresh = [];
+        for (const a of state.annAll) {
+            if (!state.seenAnn.has(a.key)) {
+                state.seenAnn.add(a.key);
+                if (relevant(a)) fresh.push(a);
+            }
+        }
+        if (fresh.length) {
+            playBeep();
+            notify('New announcement', String(fresh[0].message || '').slice(0, 120));
+        }
+    }
+    renderAnnouncements();
+}
+
+function renderAnnouncements() {
+    const list = $('announceList');
+    const shown = state.annAll.filter(relevant);
+    if (!shown.length) {
+        list.replaceChildren(h('p', { class: 'empty' }, state.bus === 'ALL' ? 'No announcements yet.' : 'No announcements for ' + state.bus + ' yet.'));
+        return;
+    }
+    list.replaceChildren(...shown.map((a) => {
+        const ts = isNum(a.timestamp) ? a.timestamp : 0;
+        return h('article', { class: 'ann' },
+            h('div', { class: 'ann-head' },
+                h('strong', {}, String(a.sender || 'Management')),
+                h('span', { class: 'chip' }, a.targetBus === 'ALL' ? 'All routes' : String(a.targetBus)),
+                ts ? h('time', { dataset: { ts: String(ts) }, datetime: new Date(ts).toISOString(), title: new Date(ts).toLocaleString() }, ago(nowMs() - ts)) : null,
+                state.role === 'Management' ? h('button', { type: 'button', class: 'btn btn-ghost-danger btn-small', dataset: { action: 'del-ann', id: a.key } }, 'Delete') : null),
+            h('p', {}, String(a.message || '')));
+    }));
+}
+
+$('announceList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-action="del-ann"]');
+    if (!b) return;
+    if (!confirm('Delete this announcement for everyone?')) return;
+    db.ref('announcements/' + b.dataset.id).remove()
+        .then(() => toast('Announcement deleted.'))
+        .catch(() => toast("Couldn't delete.", 'error'));
+});
+
+$('annMsg').addEventListener('input', () => { $('annCount').textContent = $('annMsg').value.length; });
+
+$('broadcastForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('annMsg').value.trim(), target = $('annTarget').value;
+    if (!msg) { toast('Write a message first.', 'warn'); return; }
+    if (target !== 'ALL' && !state.routes[target]) { toast('Pick where to send it.', 'warn'); return; }
+    db.ref('announcements').push({ message: msg.slice(0, 500), sender: 'Management', targetBus: target, timestamp: ServerValue.TIMESTAMP })
+        .then(() => { toast('Announcement posted.'); $('annMsg').value = ''; $('annCount').textContent = '0'; })
+        .catch(() => toast("Couldn't post.", 'error'));
+});
+
+if ('Notification' in window && Notification.permission === 'default') $('notifyBtn').hidden = false;
+$('notifyBtn').addEventListener('click', () => {
+    Notification.requestPermission().then((p) => {
+        $('notifyBtn').hidden = true;
+        toast(p === 'granted' ? 'Notifications are on.' : 'Notifications stay off.');
+    });
+});
+
+/* =====================================================================
+   STUDENT ALERTS: SOS (location) AND GLOBAL (siren for the route)
+   ===================================================================== */
+let sosRef = null;
+
+function detachSos() {
+    if (sosRef) { sosRef.off(); sosRef = null; }
+    state.sos = [];
+    clearSosMarkers();
+    renderSosDashboard();
+}
+
+/** Only management and drivers subscribe. Students write alerts but never read other students' records. */
+function attachSos() {
+    detachSos();
+    if (state.role === 'Student') return;
+    sosRef = db.ref('emergencyAlerts').limitToLast(SETTINGS.sosLimit);
+    sosRef.on('value', (snap) => {
+        const list = [];
+        snap.forEach((child) => {
+            const v = child.val();
+            if (!v || v.status === 'Resolved') return;
+            list.push({
+                id: child.key,
+                type: v.type === 'global' ? 'global' : 'sos',
+                studentId: String(v.studentId || 'Unknown'),
+                route: String(v.route || ''),
+                message: String(v.message || ''),
+                hasLocation: validLatLng(v.lat, v.lng),
+                lat: v.lat, lng: v.lng,
+                status: String(v.status || 'Pending')
+            });
+        });
+        state.sos = list;
+        renderSosDashboard();
+        syncSosMarkers();
+    }, () => toast("Couldn't load student alerts.", 'error'));
+}
+
 function renderSosDashboard() {
     if (state.role === 'Student') return;
-    const list = $('activeSosList'); list.innerHTML = ''; const filtered = state.activeSosList.filter(a => state.role === 'Management' || a.route === state.bus);
-    if (filtered.length === 0) { list.innerHTML = '<p class="muted">No active SOS alerts.</p>'; return; }
-    filtered.forEach(a => {
-        const btnHtml = state.role === 'Management' ? `<button class="btn btn-primary btn-small" onclick="resolveSos('${a.id}')">Mark Resolved</button>` : `<button class="btn btn-primary btn-small" onclick="ackSos('${a.id}')">Acknowledge</button>`;
-        list.innerHTML += `<div class="list-row" style="background:var(--alert-soft); padding:10px; border-radius:8px; margin-bottom:10px;"><div class="list-badge" style="background:var(--alert); color:#fff; font-size:20px;">🚨</div><div><strong>${a.studentId} (${a.route})</strong><div class="muted">Status: ${a.status}</div></div>${btnHtml}</div>`;
+    const box = $('activeSosList');
+    const list = visibleSos();
+    if (!list.length) { box.replaceChildren(h('p', { class: 'muted' }, 'No active alerts.')); return; }
+    box.replaceChildren(...list.map((a) => {
+        const title = a.type === 'global' ? 'Global alert' : 'SOS';
+        const detail = a.type === 'global' && a.message ? a.message : 'Status: ' + a.status;
+        const action = state.role === 'Management'
+            ? h('button', { type: 'button', class: 'btn btn-primary btn-small', dataset: { action: 'resolve-sos', id: a.id } }, 'Mark resolved')
+            : h('button', { type: 'button', class: 'btn btn-primary btn-small', dataset: { action: 'ack-sos', id: a.id } }, 'Acknowledge');
+        return h('div', { class: 'sos-row' },
+            h('div', { class: 'list-badge sos', 'aria-hidden': 'true' }, a.type === 'global' ? '📣' : '🚨'),
+            h('div', {},
+                h('strong', {}, title + ': ' + a.studentId + ' (' + a.route + ')'),
+                h('div', { class: 'muted' }, detail)),
+            action);
+    }));
+}
+
+$('activeSosList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-action]');
+    if (!b) return;
+    const a = state.sos.find((x) => x.id === b.dataset.id);
+    if (!a) return;
+    if (b.dataset.action === 'resolve-sos') resolveAlertRecord(a).catch(() => toast("Couldn't update the alert.", 'error'));
+    if (b.dataset.action === 'ack-sos') {
+        db.ref('emergencyAlerts/' + a.id).update({ status: 'Acknowledged' })
+            .catch(() => toast("Couldn't update the alert.", 'error'));
+    }
+});
+
+/** Marks a student record resolved, and clears the siren if this record is the one driving it. */
+async function resolveAlertRecord(a) {
+    await db.ref('emergencyAlerts/' + a.id).update({ status: 'Resolved' });
+    const bus = state.fleet[a.route];
+    if (a.type === 'global' && bus && bus.emergencyAlertId === a.id) await clearBusEmergency(a.route);
+    toast('Alert resolved.');
+}
+
+function sosBusy(busy) {
+    $('sosSubmit').disabled = busy;
+    $('sosSubmit').textContent = busy ? 'Getting location…' : 'Send SOS alert';
+}
+
+$('openSosBtn').addEventListener('click', () => {
+    $('sosStudentId').value = localStore.get('dnr_student_id') || '';
+    openModal($('sosModal'));
+});
+
+$('sosForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const sid = $('sosStudentId').value.trim().slice(0, 30);
+    if (!sid) { toast('Enter your student ID.', 'warn'); return; }
+    if (!navigator.geolocation) { toast("This device can't share its location, so SOS can't be sent.", 'error'); return; }
+    localStore.set('dnr_student_id', sid);
+    sosBusy(true);
+    navigator.geolocation.getCurrentPosition((pos) => {
+        db.ref('emergencyAlerts').push({
+            type: 'sos', studentId: sid, route: state.bus,
+            lat: pos.coords.latitude, lng: pos.coords.longitude,
+            status: 'Pending', timestamp: ServerValue.TIMESTAMP
+        })
+            .then(() => { closeModal($('sosModal')); toast('SOS sent. Help is on the way.', 'error'); })
+            .catch(() => toast("SOS couldn't be sent. Try again, or contact the college office.", 'error'))
+            .finally(() => sosBusy(false));
+    }, () => {
+        sosBusy(false);
+        toast('Location permission is needed to send SOS.', 'error');
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+});
+
+/* =====================================================================
+   GLOBAL BUS ALERT (siren and banner on the route)
+   ===================================================================== */
+const cooldownKey = (sid) => 'dnr_global_last_' + sid;
+
+function cooldownLeftMs(sid) {
+    const last = Number(localStore.get(cooldownKey(sid)) || 0);
+    return Math.max(0, last + SETTINGS.globalAlertCooldownMs - Date.now());
+}
+
+function activeEmergencies() {
+    return Object.keys(state.fleet).sort(compareBus)
+        .filter((k) => state.fleet[k] && state.fleet[k].emergency === true)
+        .map((k) => ({
+            bus: k,
+            message: String(state.fleet[k].emergencyMessage || 'Immediate assistance required.'),
+            by: state.fleet[k].emergencyRaisedBy ? String(state.fleet[k].emergencyRaisedBy) : '',
+            time: state.fleet[k].emergencyTime || 0
+        }));
+}
+
+function handleEmergency(force) {
+    const list = activeEmergencies();
+    const key = list.map((e) => e.bus + ':' + e.time).join('|');
+    const changed = key !== state.alertKey;
+    if (!changed && !force) { renderEmergency(list); return; }
+    const hadAlert = !!state.alertKey;
+    state.alertKey = key;
+
+    if (list.length) {
+        if (changed) {
+            audio.muted = false;
+            startSiren();
+            if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 600]);
+            notify('Global alert', list.map((e) => e.bus + ': ' + e.message).join('. '));
+        }
+        $('alertText').textContent = 'Global alert. ' + list.map((e) => e.bus + ': ' + e.message + (e.by ? ' (raised by ' + e.by + ')' : '')).join('   ');
+        $('alertBanner').hidden = false;
+    } else {
+        if (hadAlert) { stopSiren(); audio.muted = false; }
+        $('alertBanner').hidden = true;
+    }
+    updateAudioHint();
+    renderEmergency(list);
+}
+
+function renderEmergency(list) {
+    const card = $('emergencyCard'), body = $('emergencyBody');
+    const canRaise = state.bus !== 'ALL';
+    const student = state.role === 'Student';
+    body.replaceChildren();
+    card.classList.toggle('emergency-active', list.length > 0);
+    $('emergencyTitle').textContent = list.length ? 'Global alert active' : 'Bus emergency (global)';
+
+    if (list.length) {
+        list.forEach((e) => body.append(h('div', { class: 'em-item' },
+            h('span', {}, e.bus + ': ' + e.message),
+            e.by ? h('span', { class: 'em-by' }, 'Raised by ' + e.by) : null,
+            !student
+                ? h('button', { type: 'button', class: 'btn btn-danger btn-small', dataset: { action: 'resolve-emergency', id: e.bus } }, 'Mark ' + e.bus + ' resolved')
+                : null)));
+    } else if (canRaise) {
+        body.append(
+            h('p', { class: 'card-sub' }, student
+                ? 'Use this only in a real emergency on your bus. It sounds a siren for everyone on this route and alerts management. Your student ID is shown with it.'
+                : 'Use this only if something is wrong on the road. Everyone on this route will hear a siren.'),
+            h('button', { type: 'button', class: 'btn btn-danger btn-lg btn-wide', dataset: { action: 'raise-emergency' } }, 'Raise global alert'));
+    } else {
+        body.append(h('p', { class: 'muted' }, 'Open a single bus to raise a global alert for it.'));
+    }
+}
+
+$('emergencyBody').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-action]');
+    if (!b) return;
+    if (b.dataset.action === 'raise-emergency') openEmergencyModal();
+    if (b.dataset.action === 'resolve-emergency') resolveEmergency(b.dataset.id);
+});
+
+$('openGlobalBtn').addEventListener('click', openEmergencyModal);
+
+function openEmergencyModal() {
+    if (state.bus === 'ALL') { toast('Open a single bus to raise an alert for it.', 'warn'); return; }
+    if (activeEmergencies().length) { toast('An alert is already active on this bus.', 'warn'); return; }
+    const student = state.role === 'Student';
+    $('emBus').textContent = state.bus;
+    $('emNote').value = '';
+    $('emStudentWrap').hidden = !student;
+    $('emStudentId').required = student;
+    $('emStudentId').value = student ? (localStore.get('dnr_student_id') || '') : '';
+    $('emSubmit').textContent = student ? 'Send global alert' : 'Raise alert';
+    openModal($('emergencyModal'), student && !$('emStudentId').value ? $('emStudentId') : $('emReason'));
+}
+
+$('emergencyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const note = $('emNote').value.trim().slice(0, 120);
+    const message = $('emReason').value + (note ? ': ' + note : '');
+
+    if (state.role === 'Student') {
+        const sid = $('emStudentId').value.trim().slice(0, 30);
+        if (!sid) { toast('Enter your student ID.', 'warn'); return; }
+        const wait = cooldownLeftMs(sid);
+        if (wait > 0) {
+            toast('You can raise another global alert in ' + Math.ceil(wait / 60000) + ' min.', 'warn');
+            return;
+        }
+        if (activeEmergencies().length) { toast('An alert is already active on this bus.', 'warn'); return; }
+
+        localStore.set('dnr_student_id', sid);
+        closeModal($('emergencyModal'));
+        const alertRef = db.ref('emergencyAlerts').push();
+        try {
+            await alertRef.set({
+                type: 'global', studentId: sid, route: state.bus,
+                message, status: 'Active', timestamp: ServerValue.TIMESTAMP
+            });
+            await db.ref('buses/' + state.bus).update({
+                emergency: true,
+                emergencyMessage: message,
+                emergencyTime: ServerValue.TIMESTAMP,
+                emergencyRaisedBy: sid,
+                emergencyAlertId: alertRef.key
+            });
+            localStore.set(cooldownKey(sid), String(Date.now()));
+            toast('Global alert sent. Management has been notified.');
+        } catch (err) {
+            toast("The alert couldn't be sent. Try again, or call the college office.", 'error');
+        }
+        return;
+    }
+
+    closeModal($('emergencyModal'));
+    db.ref('buses/' + state.bus).update({
+        emergency: true, emergencyMessage: message, emergencyTime: ServerValue.TIMESTAMP,
+        emergencyRaisedBy: null, emergencyAlertId: null
+    })
+        .then(() => toast('Alert raised.'))
+        .catch(() => toast("Couldn't raise the alert.", 'error'));
+});
+
+function clearBusEmergency(bus) {
+    return db.ref('buses/' + bus).update({
+        emergency: false, emergencyMessage: null, emergencyTime: null,
+        emergencyRaisedBy: null, emergencyAlertId: null
     });
 }
-window.resolveSos = id => db.ref('emergencyAlerts/' + id).update({status: 'Resolved'});
-window.ackSos = id => db.ref('emergencyAlerts/' + id).update({status: 'Acknowledged'});
 
-/* General Emergencies (Existing) */
-function activeEmergencies() { return Object.keys(state.fleet).sort(compareBus).filter((k) => state.fleet[k] && state.fleet[k].emergency === true).map((k) => ({ bus: k, message: String(state.fleet[k].emergencyMessage || 'Immediate assistance required.'), time: state.fleet[k].emergencyTime || 0 })); }
-function handleEmergency(force) {
-    const list = activeEmergencies(), key = list.map((e) => e.bus + ':' + e.time).join('|'), changed = key !== state.alertKey;
-    if (!changed && !force) return; const hadAlert = !!state.alertKey; state.alertKey = key;
-    if (list.length) {
-        if (changed) { audio.muted = false; startSiren(); if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 600]); notify('Global alert', list.map((e) => e.bus + ': ' + e.message).join('. ')); }
-        $('alertText').textContent = 'Global alert. ' + list.map((e) => e.bus + ': ' + e.message).join('   '); $('alertBanner').hidden = false;
-    } else { if (hadAlert) { stopSiren(); audio.muted = false; } $('alertBanner').hidden = true; }
-    updateAudioHint(); renderEmergency(list);
+/** Clears the siren, and marks the linked student record resolved if there is one. */
+function resolveEmergency(bus) {
+    const alertId = state.fleet[bus] && state.fleet[bus].emergencyAlertId;
+    const jobs = [clearBusEmergency(bus)];
+    if (alertId) jobs.push(db.ref('emergencyAlerts/' + alertId).update({ status: 'Resolved' }));
+    Promise.all(jobs)
+        .then(() => toast('Alert resolved.'))
+        .catch(() => toast("Couldn't resolve the alert.", 'error'));
 }
-function renderEmergency(list) {
-    const card = $('emergencyCard'), body = $('emergencyBody'); const canRaise = state.role !== 'Student' && state.bus !== 'ALL'; body.replaceChildren(); card.classList.toggle('emergency-active', list.length > 0); $('emergencyTitle').textContent = list.length ? 'Global alert active' : 'Bus Emergency (Global)';
-    if (list.length) { list.forEach((e) => body.append(h('div', { class: 'em-item' }, h('span', {}, e.bus + ': ' + e.message), state.role !== 'Student' ? h('button', { type: 'button', class: 'btn btn-danger btn-small', onclick: () => resolveEmergency(e.bus) }, 'Mark ' + e.bus + ' resolved') : null))); } else if (canRaise) { body.append(h('p', { class: 'card-sub' }, 'Use this only if something is wrong on the road. Everyone on this route will hear a siren.'), h('button', { type: 'button', class: 'btn btn-danger btn-lg btn-wide', onclick: openEmergencyModal }, 'Raise global alert')); } else { body.append(h('p', { class: 'muted' }, state.bus === 'ALL' ? 'All routes are running normally.' : 'No general emergency on this route.')); }
-    card.hidden = state.role === 'Student' && list.length === 0;
-}
-function openEmergencyModal() { if (state.bus === 'ALL') { toast('Open a single bus to raise an alert for it.', 'warn'); return; } $('emBus').textContent = state.bus; $('emNote').value = ''; openModal($('emergencyModal'), $('emReason')); }
-$('emergencyModal').querySelector('[data-cancel]').addEventListener('click', () => closeModal($('emergencyModal')));
-$('emergencyForm').addEventListener('submit', (e) => { e.preventDefault(); const note = $('emNote').value.trim().slice(0, 120); const message = $('emReason').value + (note ? ': ' + note : ''); closeModal($('emergencyModal')); db.ref('buses/' + state.bus).update({ emergency: true, emergencyMessage: message, emergencyTime: ServerValue.TIMESTAMP }).then(() => toast('Alert raised.')).catch(() => toast("Couldn't raise the alert.", 'error')); });
-function resolveEmergency(bus) { db.ref('buses/' + bus).update({ emergency: false, emergencyMessage: null, emergencyTime: null }).then(() => toast('Alert resolved.')).catch(() => toast("Couldn't resolve.", 'error')); }
-$('silenceBtn').addEventListener('click', () => { audio.muted = true; stopSiren(); updateAudioHint(); toast('Siren silenced. Alert stays on screen until resolved.'); });
 
-/* Announcements */
-function attachAnnouncements() {
-    if (annRef) annRef.off(); state.seenAnn = null; state.annAll = [];
-    annRef = db.ref('announcements').limitToLast(SETTINGS.announcementLimit);
-    annRef.on('value', (snap) => { const items = []; snap.forEach((child) => { const v = child.val(); if (v && typeof v === 'object') items.push({ ...v, key: child.key }); }); items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); state.annAll = items; renderAnnouncements(true); }, () => { $('announceList').replaceChildren(h('p', { class: 'empty' }, "Couldn't load announcements.")); });
-}
-const relevant = (a) => state.bus === 'ALL' || a.targetBus === 'ALL' || a.targetBus === state.bus;
-function renderAnnouncements(fromData) {
-    if (fromData) { if (state.seenAnn === null) { state.seenAnn = new Set(state.annAll.map((a) => a.key)); } else { const fresh = state.annAll.filter((a) => !state.seenAnn.has(a.key) && relevant(a)); state.annAll.forEach((a) => state.seenAnn.add(a.key)); if (fresh.length) { playBeep(); notify('New announcement', String(fresh[0].message || '')); } } }
-    const list = $('announceList'); list.replaceChildren(); const shown = state.annAll.filter(relevant);
-    if (!shown.length) { list.append(h('p', { class: 'empty' }, state.bus === 'ALL' ? 'No announcements yet.' : 'No announcements for ' + state.bus + ' yet.')); return; }
-    shown.forEach((a) => { const ts = isNum(a.timestamp) ? a.timestamp : 0; list.append(h('article', { class: 'ann' }, h('div', { class: 'ann-head' }, h('strong', {}, String(a.sender || 'Management')), h('span', { class: 'chip' }, a.targetBus === 'ALL' ? 'All routes' : String(a.targetBus)), ts ? h('time', { dataset: { ts: String(ts) }, datetime: new Date(ts).toISOString(), title: new Date(ts).toLocaleString() }, ago(nowMs() - ts)) : null, state.role === 'Management' ? h('button', { type: 'button', class: 'btn btn-ghost-danger btn-small', onclick: () => deleteAnnouncement(a.key) }, 'Delete') : null), h('p', {}, String(a.message || '')))); });
-}
-function deleteAnnouncement(key) { if (!confirm('Delete this announcement for everyone?')) return; db.ref('announcements/' + key).remove().then(() => toast('Announcement deleted.')).catch(() => toast("Couldn't delete.", 'error')); }
-$('annMsg').addEventListener('input', () => { $('annCount').textContent = $('annMsg').value.length; });
-$('broadcastForm').addEventListener('submit', (e) => { e.preventDefault(); const msg = $('annMsg').value.trim(), target = $('annTarget').value; if (!msg) { toast('Write a message first.', 'warn'); return; } if (target !== 'ALL' && !BUS_ID.test(target)) { toast('Pick where to send it.', 'warn'); return; } db.ref('announcements').push({ message: msg.slice(0, 500), sender: 'Management', targetBus: target, timestamp: ServerValue.TIMESTAMP }).then(() => { toast('Announcement posted.'); $('annMsg').value = ''; $('annCount').textContent = '0'; }).catch(() => toast("Couldn't post.", 'error')); });
-if ('Notification' in window && Notification.permission === 'default') $('notifyBtn').hidden = false;
-$('notifyBtn').addEventListener('click', () => { Notification.requestPermission().then((p) => { $('notifyBtn').hidden = true; toast(p === 'granted' ? 'Notifications are on.' : 'Notifications stay off.'); }); });
-
-/* Management buses */
-$('addBusForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); const id = $('newBusId').value.trim().toUpperCase(), name = $('newBusRoute').value.trim();
-    if (!BUS_ID.test(id)) { toast('Use 2 to 12 letters, numbers or dashes.', 'warn'); return; } if (name.length < 3) { toast('Enter the route.', 'warn'); return; }
-    const exists = !!state.routes[id]; if (exists && !confirm(id + ' already exists. Update its route name?')) return;
-    try { const base = state.routesFromDb ? {} : { ...SETTINGS.defaultRoutes }; await db.ref('routes').update({ ...base, [id]: { name } }); if (!exists) await db.ref('buses/' + id).update({ status: 'OFFLINE', speed: 0 }); toast(exists ? id + ' updated.' : id + ' registered.'); $('newBusId').value = ''; $('newBusRoute').value = ''; } catch (err) { toast("Couldn't save.", 'error'); }
+$('silenceBtn').addEventListener('click', () => {
+    audio.muted = true;
+    stopSiren();
+    toast('Siren silenced. The alert stays on screen until it is resolved.');
 });
-async function removeRoute(id) { if (!confirm('Remove ' + id + ' and its live data?')) return; try { const base = state.routesFromDb ? {} : { ...SETTINGS.defaultRoutes }; await db.ref('routes').update({ ...base, [id]: null }); await db.ref('buses/' + id).remove(); toast(id + ' removed.'); } catch (err) { toast("Couldn't remove.", 'error'); } }
 
-/* Driver tracking */
+/* =====================================================================
+   DRIVER TRACKING
+   ===================================================================== */
 const tracker = { active: false, bus: '', watchId: null, hb: null, fix: null, lastSent: 0, wakeLock: null };
-function setDrvMsg(text, kind = '') { const el = $('drvMsg'); el.textContent = text; el.className = 'notice' + (kind ? ' ' + kind : ''); }
+
+function setDrvMsg(text, kind = '') {
+    const el = $('drvMsg');
+    el.textContent = text;
+    el.className = 'notice' + (kind ? ' ' + kind : '');
+}
+
 function updateDriverUI() {
-    if (state.role !== 'Driver') return; const btn = $('trackBtn'); btn.textContent = tracker.active ? 'Stop sharing location' : 'Start sharing location'; btn.className = 'btn btn-lg btn-wide ' + (tracker.active ? 'btn-danger' : 'btn-go'); $('drvState').textContent = tracker.active ? 'On, ' + tracker.bus : 'Off'; const acc = tracker.fix ? Math.round(tracker.fix.acc) : null; $('drvAcc').textContent = acc == null ? '--' : '±' + acc + ' m' + (acc > 100 ? ' (weak)' : ''); $('drvSent').textContent = tracker.lastSent ? ago(Date.now() - tracker.lastSent) : '--'; $('drvWake').textContent = !tracker.active ? '--' : !('wakeLock' in navigator) ? 'Keep it awake yourself' : tracker.wakeLock ? 'Staying awake' : 'May turn off';
+    if (state.role !== 'Driver') return;
+    const btn = $('trackBtn');
+    btn.textContent = tracker.active ? 'Stop sharing location' : 'Start sharing location';
+    btn.className = 'btn btn-lg btn-wide ' + (tracker.active ? 'btn-danger' : 'btn-go');
+    $('drvState').textContent = tracker.active ? 'On, ' + tracker.bus : 'Off';
+    const acc = tracker.fix ? Math.round(tracker.fix.acc) : null;
+    $('drvAcc').textContent = acc == null ? '--' : '±' + acc + ' m' + (acc > SETTINGS.gpsWarnAccuracyM ? ' (weak)' : '');
+    $('drvSent').textContent = tracker.lastSent ? ago(Date.now() - tracker.lastSent) : '--';
+    $('drvWake').textContent = !tracker.active ? '--'
+        : !('wakeLock' in navigator) ? 'Keep it awake yourself'
+        : tracker.wakeLock ? 'Staying awake' : 'May turn off';
 }
-async function acquireWakeLock() { try { if ('wakeLock' in navigator && tracker.active && !tracker.wakeLock) { tracker.wakeLock = await navigator.wakeLock.request('screen'); tracker.wakeLock.addEventListener('release', () => { tracker.wakeLock = null; updateDriverUI(); }); } } catch (e) { } updateDriverUI(); }
-function releaseWakeLock() { try { if (tracker.wakeLock) tracker.wakeLock.release(); } catch (e) { } tracker.wakeLock = null; }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (tracker.active) acquireWakeLock(); renderLive(); } });
-function sendFix(f) { tracker.lastSent = Date.now(); db.ref('buses/' + tracker.bus).update({ lat: +f.lat.toFixed(6), lng: +f.lng.toFixed(6), speed: f.speed, status: 'RUNNING', updatedAt: ServerValue.TIMESTAMP }).then(() => setDrvMsg('Sharing ' + tracker.bus + ' live.', 'ok')).catch(() => setDrvMsg("Couldn't send location.", 'error')); }
-function onPosition(p) { const c = p.coords; tracker.fix = { lat: c.latitude, lng: c.longitude, speed: Number.isFinite(c.speed) ? Math.round(c.speed * 3.6) : 0, acc: c.accuracy, at: Date.now() }; if (Date.now() - tracker.lastSent >= SETTINGS.gpsSendEveryMs) sendFix(tracker.fix); updateDriverUI(); }
-function onPositionError(err) { if (err.code === 1) { setDrvMsg('Location blocked.', 'error'); stopTracking({ silent: true }); } else if (err.code === 2) { setDrvMsg("No GPS signal.", 'warn'); } else { setDrvMsg('GPS taking long.', 'warn'); } }
+
+async function acquireWakeLock() {
+    try {
+        if ('wakeLock' in navigator && tracker.active && !tracker.wakeLock) {
+            tracker.wakeLock = await navigator.wakeLock.request('screen');
+            tracker.wakeLock.addEventListener('release', () => { tracker.wakeLock = null; updateDriverUI(); });
+        }
+    } catch (e) { }
+    updateDriverUI();
+}
+
+function releaseWakeLock() {
+    try { if (tracker.wakeLock) tracker.wakeLock.release(); } catch (e) { }
+    tracker.wakeLock = null;
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (tracker.active) acquireWakeLock();
+        if (!$('appInterface').hidden) { recomputeStates(); renderLive(); }
+    }
+});
+
+function sendFix(f) {
+    tracker.lastSent = Date.now();
+    db.ref('buses/' + tracker.bus).update({
+        lat: +f.lat.toFixed(6), lng: +f.lng.toFixed(6),
+        speed: Math.round(f.speed), status: 'RUNNING', updatedAt: ServerValue.TIMESTAMP
+    })
+        .then(() => setDrvMsg('Sharing ' + tracker.bus + ' live.', 'ok'))
+        .catch(() => setDrvMsg("Couldn't send location. Retrying…", 'error'));
+}
+
+function onPosition(p) {
+    const c = p.coords;
+    tracker.fix = {
+        lat: c.latitude, lng: c.longitude,
+        speed: Number.isFinite(c.speed) ? Math.max(0, c.speed * 3.6) : 0,
+        acc: c.accuracy, at: Date.now()
+    };
+    if (Date.now() - tracker.lastSent >= SETTINGS.gpsSendEveryMs) sendFix(tracker.fix);
+    updateDriverUI();
+}
+
+function onPositionError(err) {
+    if (err.code === 1) { setDrvMsg('Location permission is blocked. Allow it in your browser settings.', 'error'); stopTracking({ silent: true }); }
+    else if (err.code === 2) setDrvMsg('No GPS signal.', 'warn');
+    else setDrvMsg('GPS is taking a long time…', 'warn');
+}
+
+/** Re-sends the last good fix while GPS is alive. Stops once the fix is too old, so the bus shows as weak or lost. */
+function heartbeat() {
+    const f = tracker.fix;
+    if (!f || Date.now() - f.at > SETTINGS.maxFixAgeMs) return;
+    if (Date.now() - tracker.lastSent < SETTINGS.heartbeatEveryMs - 500) return;
+    sendFix({ ...f, speed: Date.now() - f.at > SETTINGS.driverStaleSpeedMs ? 0 : f.speed });
+}
+
 function startTracking() {
-    if (state.role !== 'Driver' || state.bus === 'ALL') return; if (!navigator.geolocation) { setDrvMsg("No device location.", 'error'); return; }
-    tracker.active = true; tracker.bus = state.bus; tracker.fix = null; tracker.lastSent = 0; const ref = db.ref('buses/' + tracker.bus);
+    if (state.role !== 'Driver' || state.bus === 'ALL') return;
+    if (!navigator.geolocation) { setDrvMsg("This device can't share its location.", 'error'); return; }
+    tracker.active = true;
+    tracker.bus = state.bus;
+    tracker.fix = null;
+    tracker.lastSent = 0;
+    const ref = db.ref('buses/' + tracker.bus);
     ref.onDisconnect().update({ status: 'OFFLINE', speed: 0, updatedAt: ServerValue.TIMESTAMP });
-    tracker.watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
-    tracker.hb = setInterval(() => { const f = tracker.fix; if (!f || Date.now() - tracker.lastSent < SETTINGS.heartbeatEveryMs - 500 || Date.now() - f.at > 60000) return; sendFix({ ...f, speed: Date.now() - f.at > 8000 ? 0 : f.speed }); }, SETTINGS.heartbeatEveryMs);
-    setDrvMsg('Looking for GPS…'); acquireWakeLock(); updateDriverUI();
+    tracker.watchId = navigator.geolocation.watchPosition(onPosition, onPositionError,
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+    tracker.hb = setInterval(heartbeat, SETTINGS.heartbeatEveryMs);
+    setDrvMsg('Looking for GPS…');
+    acquireWakeLock();
+    updateDriverUI();
 }
+
 function stopTracking(opts = {}) {
-    if (!tracker.active) return; const bus = tracker.bus; navigator.geolocation.clearWatch(tracker.watchId); clearInterval(tracker.hb); releaseWakeLock(); tracker.active = false; tracker.watchId = null; tracker.hb = null; tracker.fix = null; const ref = db.ref('buses/' + bus); ref.onDisconnect().cancel(); ref.update({ status: 'OFFLINE', speed: 0, updatedAt: ServerValue.TIMESTAMP }).catch(() => {}); if (!opts.silent) setDrvMsg('Sharing stopped.'); updateDriverUI();
+    if (!tracker.active) return;
+    const bus = tracker.bus;
+    navigator.geolocation.clearWatch(tracker.watchId);
+    clearInterval(tracker.hb);
+    releaseWakeLock();
+    tracker.active = false;
+    tracker.watchId = null;
+    tracker.hb = null;
+    tracker.fix = null;
+    const ref = db.ref('buses/' + bus);
+    ref.onDisconnect().cancel();
+    ref.update({ status: 'OFFLINE', speed: 0, updatedAt: ServerValue.TIMESTAMP }).catch(() => { });
+    if (!opts.silent) setDrvMsg('Sharing stopped.');
+    updateDriverUI();
 }
-$('trackBtn').addEventListener('click', () => { if (tracker.active) stopTracking(); else startTracking(); });
 
-setInterval(() => { if ($('appInterface').hidden) return; syncMarkers(false); renderLive(); updateDriverUI(); document.querySelectorAll('time[data-ts]').forEach((t) => { t.textContent = ago(nowMs() - Number(t.dataset.ts)); }); }, 5000);
+$('trackBtn').addEventListener('click', () => {
+    if (tracker.active) stopTracking();
+    else startTracking();
+});
 
-/* Start */
-renderTargetOptions();
+/* =====================================================================
+   CLOCK TICK: refresh "ago" text, states and markers without new data
+   ===================================================================== */
+setInterval(() => {
+    if ($('appInterface').hidden) return;
+    recomputeStates();
+    handleEmergency(false);
+    syncBusMarkers(false);
+    renderLive();
+    updateDriverUI();
+    document.querySelectorAll('time[data-ts]').forEach((t) => { t.textContent = ago(nowMs() - Number(t.dataset.ts)); });
+}, SETTINGS.clockTickMs);
+
+/* =====================================================================
+   START
+   ===================================================================== */
+renderRouteOptions();
 const saved = loadSession();
-if (saved) { state.role = saved.role; state.bus = saved.bus; state.stopId = saved.stopId || ''; showApp(); }
+if (saved) {
+    state.role = saved.role;
+    state.bus = saved.bus;
+    state.stopId = saved.stopId || '';
+    showApp();
+}
 })();
 </script>
 </body>
